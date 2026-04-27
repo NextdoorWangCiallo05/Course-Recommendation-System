@@ -45,15 +45,15 @@ Select/
 │   │   ├── check_users.sh     # 用户数据检查脚本
 │   │   └── check_images.py    # 图片资源检查脚本
 │   ├── tools/                 # 辅助工具脚本
-│   │   ├── check_majors.py    # 专业数据检查
-│   │   ├── check_academic_courses.py  # 学科课程检查
-│   │   ├── check_general_elective.py  # 通识选修检查
-│   │   ├── check_english_courses.py   # 英语课程检查
-│   │   ├── check_pe_courses.py        # 体育课程检查
-│   │   ├── check_practice_courses.py  # 实践课程检查
-│   │   ├── check_major_required.py    # 专业必修检查
-│   │   ├── init_db.py        # 数据库初始化
-│   │   └── init_mysql_tables.py  # MySQL 表初始化
+│   │   ├── init_db.py              # 数据库初始化
+│   │   ├── init_mysql_tables.py    # MySQL 表初始化
+│   │   ├── check_majors.py         # 专业数据检查
+│   │   ├── check_academic_courses.py   # 学科课程检查
+│   │   ├── check_english_courses.py    # 英语课程检查
+│   │   ├── check_pe_courses.py         # 体育课程检查
+│   │   ├── check_practice_courses.py   # 实践课程检查
+│   │   ├── check_major_required.py     # 专业必修检查
+│   │   └── check_general_elective.py   # 通识选修检查
 │   └── logs/                  # Gunicorn 日志目录
 ├── frontend/                  # Vue 前端
 │   ├── public/
@@ -100,8 +100,9 @@ Select/
   - 支持多个课程性质（通识必修、通识选修、个性课程、学科必修、专业必修、专业选修、实践课、英语必修、体育必修可同时选择）
   - 支持为不同专业设置不同的课程性质（必修/选修）
   - 课程性质筛选器，支持多选筛选
+  - 教师搜索（支持拼音缩写）
 - 教师评价管理（添加、编辑、删除、查询）
-  - 支持课程名搜索和教师搜索
+  - 支持课程名搜索和教师搜索（支持拼音缩写）
 - 按专业分类筛选课程
 - 自定义课程序号，支持按序号排序（升序/降序）
 - 评分按老师分组显示，每位老师显示评价人数
@@ -116,7 +117,7 @@ Select/
   - 按专业分类筛选
   - 按课程性质筛选（支持多选）
   - 选择专业后，可按该专业的必修/选修筛选
-  - 按教师搜索
+  - 按教师搜索（支持拼音缩写，如输入"wls"搜索"汪礼胜"）
 - 查看课程详情
 - 查看教师评价（按老师分组显示评分和评价人数）
 - 添加教师评价
@@ -286,7 +287,6 @@ sudo systemctl start course-recommendation
 
 | 角色 | 用户名 | 密码 |
 |------|--------|------|
-| 超级管理员 | superadmin | superadmin123 |
 | 管理员 | admin | admin123 |
 | 学生 | student | student123 |
 
