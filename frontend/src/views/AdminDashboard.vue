@@ -975,7 +975,11 @@ export default {
       let teachers = this.csTeachers || []
       if (this.csTeacherKeyword) {
         const keyword = this.csTeacherKeyword.toLowerCase()
-        teachers = teachers.filter(t => t.name.toLowerCase().includes(keyword))
+        teachers = teachers.filter(t => {
+          const nameMatch = t.name.toLowerCase().includes(keyword)
+          const pinyinMatch = t.name_pinyin && t.name_pinyin.toLowerCase().includes(keyword)
+          return nameMatch || pinyinMatch
+        })
       }
       if (this.csCourseTypeFilter && this.csCourseTypeFilter.length > 0) {
         const teacherIdsWithCourses = new Set()
@@ -1091,10 +1095,11 @@ export default {
           if (course.teacher_ids && course.teacher_names) {
             const ids = Array.isArray(course.teacher_ids) ? course.teacher_ids : (course.teacher_ids || '').split(',').map(id => id.trim())
             const names = Array.isArray(course.teacher_names) ? course.teacher_names : (course.teacher_names || '').split(',')
+            const pinyins = course.teacher_pinyins ? (Array.isArray(course.teacher_pinyins) ? course.teacher_pinyins : (course.teacher_pinyins || '').split(',')) : []
             ids.forEach((id, index) => {
               const idStr = String(id)
               if (!teacherMap.has(idStr)) {
-                teacherMap.set(idStr, { id: idStr, name: names[index] ? names[index].trim() : '' })
+                teacherMap.set(idStr, { id: idStr, name: names[index] ? names[index].trim() : '', name_pinyin: pinyins[index] ? pinyins[index].trim() : '' })
               }
             })
           }
