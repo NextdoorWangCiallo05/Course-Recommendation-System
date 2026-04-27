@@ -1,0 +1,16 @@
+[Unit]
+Description=Course Recommendation Backend
+After=network.target mysql.service redis.service
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/course-recommendation/backend
+ExecStart=/usr/bin/python3 -m gunicorn --workers=2 --bind=127.0.0.1:5001 --error-logfile=/home/ubuntu/course-recommendation/backend/logs/gunicorn_error.log --access-logfile=/home/ubuntu/course-recommendation/backend/logs/gunicorn_access.log app:app
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
