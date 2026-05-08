@@ -1,6 +1,6 @@
 # 🎯 选课推荐系统
 
-> 基于 Flask + Vue 3 + Element Plus 构建的智能选课平台，让选课更高效、更科学。
+> 基于 Flask + Vue 3 + Element Plus 构建的选课推荐系统，让选课更高效、更科学。
 
 ---
 
