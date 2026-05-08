@@ -1856,7 +1856,6 @@ export default {
         this.generalCourses = response
         this.initGeneralCourseSelections()
       } catch (error) {
-        console.error('加载课程失败:', error)
         this.$message.error('加载课程失败，请稍后重试')
       } finally {
         this.loading = false
@@ -1882,7 +1881,6 @@ export default {
         this.initEnglishCourseSelections()
         this.currentStep = 5
       } catch (error) {
-        console.error('加载英语课程失败:', error)
         this.$message.error('加载英语课程失败，请稍后重试')
       } finally {
         this.loading = false
@@ -2012,7 +2010,6 @@ export default {
         this.initAcademicCourseSelections(majorId)
         this.currentStep = 7
       } catch (error) {
-        console.error('加载课程失败:', error)
         this.$message.error('加载课程失败，请稍后重试')
       } finally {
         this.loading = false
@@ -2107,7 +2104,6 @@ export default {
         this.initMajorElectiveCourseSelections(majorId)
         this.currentStep = 9
       } catch (error) {
-        console.error('加载专业选修课程失败:', error)
         this.$message.error('加载专业选修课程失败，请稍后重试')
       } finally {
         this.loading = false
@@ -2159,7 +2155,6 @@ export default {
         this.initPracticeCourseSelections(majorId)
         this.currentStep = 10
       } catch (error) {
-        console.error('加载实践课程失败:', error)
         this.$message.error('加载实践课程失败，请稍后重试')
       } finally {
         this.loading = false
@@ -2270,7 +2265,6 @@ export default {
         this.initIndividualCourseSelections()
         this.currentStep = 12
       } catch (error) {
-        console.error('加载个性课程失败:', error)
         this.$message.error('加载个性课程失败，请稍后重试')
       } finally {
         this.loading = false

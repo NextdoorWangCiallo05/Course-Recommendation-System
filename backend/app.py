@@ -107,7 +107,7 @@ def init_db():
 def login():
     data = request.get_json()
     user = User.query.filter_by(username=data['username']).first()
-    if user and (check_password_hash(user.password, data['password']) or user.password == data['password']):
+    if user and check_password_hash(user.password, data['password']):
         if user.role == 'pending':
             return jsonify({'msg': '账户正在审核中，请耐心等待'}), 403
         access_token = create_access_token(identity=user.username, additional_claims={'role': user.role, 'user_id': user.id})
@@ -964,7 +964,7 @@ def change_password():
         return jsonify({'msg': '用户不存在'}), 404
     if not data.get('old_password') or not data.get('new_password'):
         return jsonify({'msg': '请填写完整信息'}), 400
-    if not (check_password_hash(user.password, data['old_password']) or user.password == data['old_password']):
+    if not check_password_hash(user.password, data['old_password']):
         return jsonify({'msg': '原密码错误'}), 400
     if len(data['new_password']) < 6:
         return jsonify({'msg': '新密码长度不能少于6位'}), 400

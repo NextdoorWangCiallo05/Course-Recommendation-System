@@ -76,15 +76,7 @@
               </el-form-item>
               <el-form-item label="课程性质">
                 <el-select v-model="courseTypeFilter" multiple placeholder="全部课程性质" clearable @change="filterCourses" style="width: 200px;">
-                  <el-option label="通识必修" value="通识必修" />
-                  <el-option label="通识选修" value="通识选修" />
-                  <el-option label="个性课程" value="个性课程" />
-                  <el-option label="学科必修" value="学科必修" />
-                  <el-option label="专业必修" value="专业必修" />
-                  <el-option label="专业选修" value="专业选修" />
-                  <el-option label="实践课" value="实践课" />
-                  <el-option label="英语必修" value="英语必修" />
-                  <el-option label="体育必修" value="体育必修" />
+                  <el-option v-for="ct in courseTypeOptions" :key="ct.value" :label="ct.label" :value="ct.value" />
                 </el-select>
               </el-form-item>
               <el-form-item label="必修/选修" v-if="searchMajor">
@@ -354,15 +346,7 @@
             </el-form-item>
             <el-form-item label="课程性质">
               <el-select v-model="adminSelectedCourseType" multiple placeholder="全部课程性质" clearable @change="loadAdminCourses" style="width: 220px;">
-                <el-option label="通识必修" value="通识必修" />
-                <el-option label="通识选修" value="通识选修" />
-                <el-option label="个性课程" value="个性课程" />
-                <el-option label="学科必修" value="学科必修" />
-                <el-option label="专业必修" value="专业必修" />
-                <el-option label="专业选修" value="专业选修" />
-                <el-option label="实践课" value="实践课" />
-                <el-option label="英语必修" value="英语必修" />
-                <el-option label="体育必修" value="体育必修" />
+                <el-option v-for="ct in courseTypeOptions" :key="ct.value" :label="ct.label" :value="ct.value" />
               </el-select>
             </el-form-item>
             <el-form-item v-if="adminSelectedMajor" label="必修/选修">
@@ -399,15 +383,7 @@
             <div class="mobile-filter-item">
               <label>课程性质</label>
               <el-select v-model="adminSelectedCourseType" multiple placeholder="全部课程性质" clearable @change="filterAdminCourses" style="width: 100%;">
-                <el-option label="通识必修" value="通识必修" />
-                <el-option label="通识选修" value="通识选修" />
-                <el-option label="个性课程" value="个性课程" />
-                <el-option label="学科必修" value="学科必修" />
-                <el-option label="专业必修" value="专业必修" />
-                <el-option label="专业选修" value="专业选修" />
-                <el-option label="实践课" value="实践课" />
-                <el-option label="英语必修" value="英语必修" />
-                <el-option label="体育必修" value="体育必修" />
+                <el-option v-for="ct in courseTypeOptions" :key="ct.value" :label="ct.label" :value="ct.value" />
               </el-select>
             </div>
             <div class="mobile-filter-item" v-if="adminSelectedMajor">
@@ -493,15 +469,7 @@
             </el-form-item>
             <el-form-item label="课程性质">
               <el-select v-model="csCourseTypeFilter" multiple placeholder="全部课程性质" clearable style="width: 200px;">
-                <el-option label="通识必修" value="通识必修" />
-                <el-option label="通识选修" value="通识选修" />
-                <el-option label="个性课程" value="个性课程" />
-                <el-option label="学科必修" value="学科必修" />
-                <el-option label="专业必修" value="专业必修" />
-                <el-option label="专业选修" value="专业选修" />
-                <el-option label="实践课" value="实践课" />
-                <el-option label="英语必修" value="英语必修" />
-                <el-option label="体育必修" value="体育必修" />
+                <el-option v-for="ct in courseTypeOptions" :key="ct.value" :label="ct.label" :value="ct.value" />
               </el-select>
             </el-form-item>
           </el-form>
@@ -714,15 +682,7 @@
         </el-form-item>
         <el-form-item label="课程性质">
           <el-select v-model="courseForm.course_types" multiple placeholder="请选择课程性质（可多选）" style="width: 100%;">
-            <el-option label="通识必修" value="通识必修" />
-            <el-option label="通识选修" value="通识选修" />
-            <el-option label="个性课程" value="个性课程" />
-            <el-option label="学科必修" value="学科必修" />
-            <el-option label="专业必修" value="专业必修" />
-            <el-option label="专业选修" value="专业选修" />
-            <el-option label="实践课" value="实践课" />
-            <el-option label="英语必修" value="英语必修" />
-            <el-option label="体育必修" value="体育必修" />
+            <el-option v-for="ct in courseTypeOptions" :key="ct.value" :label="ct.label" :value="ct.value" />
           </el-select>
         </el-form-item>
         <el-form-item v-if="courseForm.course_types.includes('通识选修')" label="主题类别">
@@ -852,15 +812,7 @@
         </el-form-item>
         <el-form-item label="课程性质">
           <el-select v-model="editCourseForm.course_types" multiple placeholder="请选择课程性质（可多选）" style="width: 100%;">
-            <el-option label="通识必修" value="通识必修" />
-            <el-option label="通识选修" value="通识选修" />
-            <el-option label="个性课程" value="个性课程" />
-            <el-option label="学科必修" value="学科必修" />
-            <el-option label="专业必修" value="专业必修" />
-            <el-option label="专业选修" value="专业选修" />
-            <el-option label="实践课" value="实践课" />
-            <el-option label="英语必修" value="英语必修" />
-            <el-option label="体育必修" value="体育必修" />
+            <el-option v-for="ct in courseTypeOptions" :key="ct.value" :label="ct.label" :value="ct.value" />
           </el-select>
         </el-form-item>
         <el-form-item v-if="editCourseForm.course_types.includes('通识选修')" label="主题类别">
@@ -903,12 +855,14 @@
 
 <script>
 import request, { clearCache } from '../api'
+import { COURSE_TYPE_OPTIONS } from '../constants'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 export default {
   data() {
     return {
       username: '',
+      courseTypeOptions: COURSE_TYPE_OPTIONS,
       activeMenu: 'courses',
       majors: [],
       teachers: [],

@@ -60,21 +60,6 @@ body {
     min-height: 100vh;
   }
 
-  /* 导航栏适配 */
-  .navbar {
-    padding: 10px 15px !important;
-    flex-wrap: wrap;
-  }
-
-  .navbar h1 {
-    font-size: 16px !important;
-    margin: 0 !important;
-  }
-
-  .navbar .user-info {
-    font-size: 12px;
-  }
-
   /* 搜索表单适配 */
   .search-form {
     padding: 15px !important;
@@ -93,24 +78,12 @@ body {
   }
 
   /* 课程卡片适配 */
-  .course-grid {
-    grid-template-columns: 1fr !important;
-    padding: 10px !important;
-    gap: 10px !important;
-  }
-
   .course-card {
     margin: 0 !important;
   }
 
   .course-card .el-card__body {
     padding: 10px !important;
-  }
-
-  /* 课程详情适配 */
-  .course-detail {
-    padding: 15px !important;
-    margin: 10px !important;
   }
 
   /* 表格适配 */
@@ -181,16 +154,8 @@ body {
 
 /* 超小屏幕适配 */
 @media screen and (max-width: 480px) {
-  .navbar h1 {
-    font-size: 14px !important;
-  }
-
   .el-card {
     border-radius: 4px !important;
-  }
-
-  .course-title {
-    font-size: 14px !important;
   }
 
   .el-pagination {

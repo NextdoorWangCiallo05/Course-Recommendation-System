@@ -54,15 +54,7 @@
             </el-form-item>
             <el-form-item label="课程性质">
               <el-select v-model="selectedCourseType" multiple placeholder="全部课程性质" clearable @change="loadCourses" style="width: 220px;">
-                <el-option label="通识必修" value="通识必修" />
-                <el-option label="通识选修" value="通识选修" />
-                <el-option label="个性课程" value="个性课程" />
-                <el-option label="学科必修" value="学科必修" />
-                <el-option label="专业必修" value="专业必修" />
-                <el-option label="专业选修" value="专业选修" />
-                <el-option label="实践课" value="实践课" />
-                <el-option label="英语必修" value="英语必修" />
-                <el-option label="体育必修" value="体育必修" />
+                <el-option v-for="ct in courseTypeOptions" :key="ct.value" :label="ct.label" :value="ct.value" />
               </el-select>
             </el-form-item>
             <el-form-item v-if="selectedMajor" label="必修/选修">
@@ -99,15 +91,7 @@
             <div class="mobile-filter-item">
               <label>课程性质</label>
               <el-select v-model="selectedCourseType" multiple placeholder="全部课程性质" clearable @change="loadCourses" style="width: 100%;">
-                <el-option label="通识必修" value="通识必修" />
-                <el-option label="通识选修" value="通识选修" />
-                <el-option label="个性课程" value="个性课程" />
-                <el-option label="学科必修" value="学科必修" />
-                <el-option label="专业必修" value="专业必修" />
-                <el-option label="专业选修" value="专业选修" />
-                <el-option label="实践课" value="实践课" />
-                <el-option label="英语必修" value="英语必修" />
-                <el-option label="体育必修" value="体育必修" />
+                <el-option v-for="ct in courseTypeOptions" :key="ct.value" :label="ct.label" :value="ct.value" />
               </el-select>
             </div>
             <div class="mobile-filter-item" v-if="selectedMajor">
@@ -197,15 +181,7 @@
             </el-form-item>
             <el-form-item label="课程性质">
               <el-select v-model="csCourseTypeFilter" multiple placeholder="全部课程性质" clearable style="width: 200px;">
-                <el-option label="通识必修" value="通识必修" />
-                <el-option label="通识选修" value="通识选修" />
-                <el-option label="个性课程" value="个性课程" />
-                <el-option label="学科必修" value="学科必修" />
-                <el-option label="专业必修" value="专业必修" />
-                <el-option label="专业选修" value="专业选修" />
-                <el-option label="实践课" value="实践课" />
-                <el-option label="英语必修" value="英语必修" />
-                <el-option label="体育必修" value="体育必修" />
+                <el-option v-for="ct in courseTypeOptions" :key="ct.value" :label="ct.label" :value="ct.value" />
               </el-select>
             </el-form-item>
           </el-form>
@@ -389,6 +365,7 @@
 
 <script>
 import request, { clearCache } from '../api'
+import { COURSE_TYPE_OPTIONS } from '../constants'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 export default {
@@ -396,6 +373,7 @@ export default {
     return {
       username: '',
       currentUserId: null,
+      courseTypeOptions: COURSE_TYPE_OPTIONS,
       isLoading: false,
       majors: [],
       teachers: [],
@@ -615,7 +593,6 @@ export default {
         this.evalForm = { teacher_id: null, rating: 5, comment: '' }
       } catch (error) {
         ElMessage.error('评价提交失败')
-        console.error(error)
       }
     },
     async deleteEvaluation(id) {
