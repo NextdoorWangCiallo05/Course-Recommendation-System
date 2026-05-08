@@ -1,17 +1,34 @@
 <template>
   <div class="dashboard">
-    <el-header class="header">
-      <h2 v-if="adminMode">选课推荐系统 - 管理员后台</h2>
-      <h2 v-else>选课推荐系统</h2>
-      <div class="user-info">
-        <span>欢迎, {{ username }}</span>
-        <el-button v-if="!adminMode" type="warning" size="small" @click="openSimulatedSelection">模拟选课</el-button>
-        <el-button v-if="!adminMode" type="primary" size="small" @click="openFeedback">反馈</el-button>
-        <el-button v-if="!adminMode" type="success" size="small" @click="goToUserCenter">用户中心</el-button>
-        <el-button v-if="isAdmin" type="primary" size="small" class="purple-btn" @click="toggleAdminMode">{{ adminMode ? '返回学生端' : '管理面板' }}</el-button>
-        <el-button type="danger" size="small" @click="handleLogout">退出</el-button>
+    <div class="header">
+      <div class="header-left">
+        <img src="/images/logo.png" class="logo" alt="logo">
+        <h2 v-if="adminMode">选课推荐系统 - 管理员后台</h2>
+        <h2 v-else>选课推荐系统</h2>
       </div>
-    </el-header>
+      <div class="user-info">
+        <span class="welcome-text">欢迎, {{ username }}</span>
+        <el-button v-if="isAdmin" type="primary" size="small" class="admin-panel-btn" @click="toggleAdminMode">{{ adminMode ? '返回学生端' : '管理面板' }}</el-button>
+        <el-dropdown trigger="click" @command="handleMenuCommand">
+          <div class="menu-btn">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <line x1="4" y1="6" x2="20" y2="6"></line>
+              <line x1="4" y1="12" x2="20" y2="12"></line>
+              <line x1="4" y1="18" x2="20" y2="18"></line>
+            </svg>
+          </div>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item v-if="!adminMode" command="simulated">模拟选课</el-dropdown-item>
+              <el-dropdown-item v-if="!adminMode" command="feedback">反馈</el-dropdown-item>
+              <el-dropdown-item v-if="!adminMode" command="userCenter">用户中心</el-dropdown-item>
+              <el-dropdown-item divided command="logout">退出</el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
+      </div>
+      <div class="mobile-menu-btn" @click="toggleMobileMenu">菜单</div>
+    </div>
     <el-container class="main" v-if="adminMode" :style="mainBgStyle">
       <el-aside width="200px">
         <el-menu
@@ -323,7 +340,7 @@
         <div v-if="mainSearchMode === 'course'">
           <el-form :inline="true" class="search-form">
             <el-form-item label="搜索">
-              <el-input v-model="adminSearchKeyword" placeholder="搜索课程名" clearable @input="filterAdminCourses" style="width: 200px;" />
+              <el-input v-model="adminSearchKeyword" placeholder="搜索课程名" clearable @input="debounceFilterAdminCourses" style="width: 200px;" />
             </el-form-item>
             <el-form-item label="专业分类">
               <el-select v-model="adminSelectedMajor" placeholder="全部专业" clearable @change="onAdminMajorChange" style="width: 200px;">
@@ -355,10 +372,71 @@
               </el-select>
             </el-form-item>
             <el-form-item label="教师搜索">
-              <el-input v-model="adminTeacherKeyword" placeholder="搜索教师名" clearable @input="filterAdminCourses" style="width: 150px;" />
+              <el-input v-model="adminTeacherKeyword" placeholder="搜索教师名（支持拼音缩写）" clearable @input="debounceFilterAdminCourses" style="width: 150px;" />
             </el-form-item>
           </el-form>
-          <el-row :gutter="20">
+          <div class="mobile-filter-btn" @click="toggleFilterPanel">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="20" y2="12"/><line x1="12" y1="18" x2="20" y2="18"/></svg>
+            <span>筛选</span>
+          </div>
+          <div v-if="showFilterPanel" class="mobile-filter-panel">
+            <div class="mobile-filter-item">
+              <label>搜索课程</label>
+              <el-input v-model="adminSearchKeyword" placeholder="搜索课程名" clearable @input="debounceFilterAdminCourses" />
+            </div>
+            <div class="mobile-filter-item">
+              <label>专业分类</label>
+              <el-select v-model="adminSelectedMajor" placeholder="全部专业" clearable @change="onAdminMajorChange" style="width: 100%;">
+                <el-option v-for="m in majors" :key="m.id" :label="m.name" :value="m.id" />
+              </el-select>
+            </div>
+            <div class="mobile-filter-item">
+              <label>开课学院</label>
+              <el-select v-model="adminSelectedCollege" placeholder="全部学院" clearable @change="filterAdminCourses" style="width: 100%;">
+                <el-option v-for="college in adminColleges" :key="college" :label="college" :value="college" />
+              </el-select>
+            </div>
+            <div class="mobile-filter-item">
+              <label>课程性质</label>
+              <el-select v-model="adminSelectedCourseType" multiple placeholder="全部课程性质" clearable @change="filterAdminCourses" style="width: 100%;">
+                <el-option label="通识必修" value="通识必修" />
+                <el-option label="通识选修" value="通识选修" />
+                <el-option label="个性课程" value="个性课程" />
+                <el-option label="学科必修" value="学科必修" />
+                <el-option label="专业必修" value="专业必修" />
+                <el-option label="专业选修" value="专业选修" />
+                <el-option label="实践课" value="实践课" />
+                <el-option label="英语必修" value="英语必修" />
+                <el-option label="体育必修" value="体育必修" />
+              </el-select>
+            </div>
+            <div class="mobile-filter-item" v-if="adminSelectedMajor">
+              <label>必修/选修</label>
+              <el-select v-model="adminSelectedMajorCourseType" placeholder="全部" clearable @change="filterAdminCourses" style="width: 100%;">
+                <el-option label="必修" value="必修" />
+                <el-option label="选修" value="选修" />
+              </el-select>
+            </div>
+            <div class="mobile-filter-item">
+              <label>教师搜索</label>
+              <el-input v-model="adminTeacherKeyword" placeholder="搜索教师名（支持拼音缩写）" clearable @input="debounceFilterAdminCourses" />
+            </div>
+          </div>
+          <div v-if="adminLoading" class="loading-skeleton">
+            <el-row :gutter="20">
+              <el-col v-for="n in 6" :key="n" :xs="24" :sm="12" :md="8" :lg="6">
+                <el-card class="course-card skeleton-card" shadow="hover">
+                  <div class="skeleton-block skeleton-title"></div>
+                  <div class="skeleton-block skeleton-tag"></div>
+                  <div class="skeleton-block skeleton-line"></div>
+                  <div class="skeleton-block skeleton-line short"></div>
+                  <div class="skeleton-block skeleton-line"></div>
+                  <div class="skeleton-block skeleton-btn"></div>
+                </el-card>
+              </el-col>
+            </el-row>
+          </div>
+          <el-row v-if="!adminLoading" :gutter="20">
             <el-col v-for="course in paginatedAdminCourses" :key="course.id" :xs="24" :sm="12" :md="8" :lg="6">
               <el-card class="course-card" shadow="hover" @click="showAdminCourseDetail(course)">
                 <template #header>
@@ -397,14 +475,14 @@
               </el-card>
             </el-col>
           </el-row>
-          <el-empty v-if="adminCourses.length === 0" description="暂无课程" />
+          <el-empty v-if="!adminLoading && adminCourses.length === 0" description="暂无课程" />
           <el-pagination
             v-if="adminCourses.length > adminPageSize"
             v-model:current-page="adminCurrentPage"
             :page-size="adminPageSize"
             :total="adminCourses.length"
-            layout="prev, pager, next"
-            style="margin-top: 20px; justify-content: center;"
+            layout="prev, pager, next, jumper"
+            class="modern-pagination"
             @update:current-page="handleAdminPageChange"
           />
         </div>
@@ -427,6 +505,9 @@
               </el-select>
             </el-form-item>
           </el-form>
+          <div class="mobile-cs-search-box">
+            <el-input v-model="csTeacherKeyword" placeholder="搜索教师名（支持拼音缩写）" clearable @input="filterCsTeachers" />
+          </div>
           <!-- 按老师检索：显示老师卡片 -->
           <el-row :gutter="20" style="margin-top: 15px;">
             <el-col v-for="teacher in filteredCsTeachers" :key="teacher.id" :xs="24" :sm="12" :md="8" :lg="6">
@@ -462,6 +543,15 @@
         </div>
       </el-card>
     </el-main>
+
+    <div v-if="showMobileMenu" class="mobile-menu-overlay" @click="showMobileMenu = false"></div>
+    <div v-if="showMobileMenu" class="mobile-menu-panel">
+      <div class="mobile-menu-header">菜单</div>
+      <div class="mobile-menu-item" @click="handleMenuCommand('simulated'); showMobileMenu = false">模拟选课</div>
+      <div class="mobile-menu-item" @click="handleMenuCommand('feedback'); showMobileMenu = false">反馈</div>
+      <div class="mobile-menu-item" @click="handleMenuCommand('userCenter'); showMobileMenu = false">用户中心</div>
+      <div class="mobile-menu-item logout" @click="handleMenuCommand('logout'); showMobileMenu = false">退出</div>
+    </div>
 
     <el-dialog v-model="showAdminDetailDialog" :title="selectedAdminCourse?.name" width="600px">
       <div v-if="selectedAdminCourse" class="detail-content">
@@ -889,7 +979,11 @@ export default {
       isRefreshing: false,
       selectedCourses: [],
       adminCurrentPage: 1,
-      adminPageSize: 12
+      adminPageSize: 12,
+      adminLoading: false,
+      adminSearchDebounceTimer: null,
+      showMobileMenu: false,
+      showFilterPanel: false
     }
   },
   async mounted() {
@@ -1432,11 +1526,11 @@ export default {
     },
     async clearAllData() {
       try {
-        const confirmed = confirm('确定要清空所有数据吗？这将删除所有课程、教师、专业和评价！此操作不可恢复！')
-        if (!confirmed) {
-          return
-        }
-        console.log('开始清空所有数据...')
+        await ElMessageBox.confirm('确定要清空所有数据吗？这将删除所有课程、教师、专业和评价！此操作不可恢复！', '警告', {
+          type: 'danger',
+          confirmButtonText: '确定',
+          cancelButtonText: '取消'
+        })
         await request.delete('/clear-all')
         ElMessage.success('所有数据已清空！')
         await this.loadMajors()
@@ -1444,8 +1538,9 @@ export default {
         await this.loadCourses()
         await this.loadEvaluations()
       } catch (error) {
-        console.error('清空数据失败:', error)
-        ElMessage.error('清空失败: ' + (error.message || '未知错误'))
+        if (error !== 'cancel') {
+          ElMessage.error('清空失败: ' + (error.message || '未知错误'))
+        }
       }
     },
     async handleDeleteFeedback(row) {
@@ -1525,19 +1620,36 @@ export default {
       this.adminMode = !this.adminMode
     },
     async loadAdminCourses() {
-      const params = { sort: 'asc', sort_by: 'order_num' }
-      if (this.adminSelectedMajor) {
-        params.major_id = this.adminSelectedMajor
+      this.adminLoading = true
+      try {
+        const params = { sort: 'asc', sort_by: 'order_num' }
+        if (this.adminSelectedMajor) {
+          params.major_id = this.adminSelectedMajor
+        }
+        if (this.adminSelectedCourseType && this.adminSelectedCourseType.length > 0) {
+          params.course_type = this.adminSelectedCourseType.join(',')
+        }
+        if (this.adminSelectedMajor && this.adminSelectedMajorCourseType) {
+          params.major_course_type = this.adminSelectedMajorCourseType
+        }
+        this.adminAllCourses = await request.get('/courses', { params })
+        this.updateAdminColleges()
+        this.filterAdminCourses()
+      } finally {
+        this.adminLoading = false
       }
-      if (this.adminSelectedCourseType && this.adminSelectedCourseType.length > 0) {
-        params.course_type = this.adminSelectedCourseType.join(',')
-      }
-      if (this.adminSelectedMajor && this.adminSelectedMajorCourseType) {
-        params.major_course_type = this.adminSelectedMajorCourseType
-      }
-      this.adminAllCourses = await request.get('/courses', { params })
-      this.updateAdminColleges()
-      this.filterAdminCourses()
+    },
+    debounceFilterAdminCourses() {
+      if (this.adminSearchDebounceTimer) clearTimeout(this.adminSearchDebounceTimer)
+      this.adminSearchDebounceTimer = setTimeout(() => {
+        this.filterAdminCourses()
+      }, 300)
+    },
+    toggleMobileMenu() {
+      this.showMobileMenu = !this.showMobileMenu
+    },
+    toggleFilterPanel() {
+      this.showFilterPanel = !this.showFilterPanel
     },
     updateAdminColleges() {
       const collegeSet = new Set()
@@ -1572,7 +1684,9 @@ export default {
         const keyword = this.adminTeacherKeyword.toLowerCase()
         filtered = filtered.filter(c => {
           if (c.teacher_names) {
-            return c.teacher_names.toLowerCase().includes(keyword)
+            const nameMatch = c.teacher_names.toLowerCase().includes(keyword)
+            const pinyinMatch = c.teacher_pinyins && c.teacher_pinyins.toLowerCase().includes(keyword)
+            return nameMatch || pinyinMatch
           }
           return false
         })
@@ -1658,6 +1772,22 @@ export default {
         this.$router.push('/login')
       } catch {
       }
+    },
+    handleMenuCommand(command) {
+      switch (command) {
+        case 'simulated':
+          this.openSimulatedSelection()
+          break
+        case 'feedback':
+          this.openFeedback()
+          break
+        case 'userCenter':
+          this.goToUserCenter()
+          break
+        case 'logout':
+          this.handleLogout()
+          break
+      }
     }
   }
 }
@@ -1672,24 +1802,35 @@ export default {
 
 .header {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
+  top: 15px;
+  left: 30px;
+  right: 30px;
   z-index: 1000;
-  background: rgba(255, 255, 255, 0.85);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow:
-    0 4px 20px rgba(0, 0, 0, 0.08),
-    inset 0 1px 2px rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(12px);
+  border-radius: 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px 20px;
+  padding: 10px 24px;
 }
 
 .header h2 {
-  font-size: 20px;
+  font-size: 18px;
   color: #333;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  object-fit: cover;
 }
 
 .user-info {
@@ -1698,33 +1839,66 @@ export default {
   gap: 15px;
 }
 
+.welcome-text {
+  font-size: 14px;
+  color: #666;
+}
+
+.admin-panel-btn {
+  border-radius: 20px !important;
+}
+
+.menu-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0091FF 0%, #1E6EF4 100%);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.menu-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 145, 255, 0.35);
+}
+
+.menu-btn svg {
+  display: block;
+}
+
+.mobile-menu-btn {
+  display: none;
+}
+
+.mobile-cs-search-box {
+  display: none;
+}
+
 .main {
-  padding: 20px;
+  padding: 20px 30px;
   flex: 1;
-  margin-top: 80px;
+  padding-top: 90px !important;
   background: transparent !important;
 }
 
 .main .el-card {
-  background: rgba(255, 255, 255, 0.75) !important;
-  box-shadow:
-    0 8px 32px rgba(31, 38, 135, 0.08),
-    inset 0 1px 2px rgba(255, 255, 255, 0.6) !important;
-  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  background: rgba(255, 255, 255, 0.6) !important;
   border-radius: 16px !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
 }
 
 .el-aside {
-  background: rgba(255, 255, 255, 0.75) !important;
-  box-shadow:
-    0 8px 32px rgba(31, 38, 135, 0.1),
-    inset 0 1px 2px rgba(255, 255, 255, 0.5) !important;
-  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  background: rgba(255, 255, 255, 0.6) !important;
   border-radius: 16px !important;
-  margin: 80px 10px 20px 20px !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  margin: 0 10px 20px 20px !important;
   position: sticky !important;
-  top: 100px !important;
-  height: calc(100vh - 120px) !important;
+  top: 90px !important;
+  height: calc(100vh - 110px) !important;
   overflow-y: auto !important;
 }
 
@@ -1937,12 +2111,9 @@ export default {
 
 .course-card {
   margin-bottom: 20px;
-  background: rgba(255, 255, 255, 0.75) !important;
-  box-shadow:
-    0 8px 32px rgba(31, 38, 135, 0.08),
-    inset 0 1px 2px rgba(255, 255, 255, 0.6) !important;
-  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  background: rgba(255, 255, 255, 0.6) !important;
   border-radius: 16px !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
   animation: cardFadeIn 0.4s ease both;
 }
 
@@ -1955,25 +2126,18 @@ export default {
 .course-card:nth-child(8) { animation-delay: 0.35s; }
 
 .course-card:hover {
-  box-shadow:
-    0 12px 40px rgba(31, 38, 135, 0.12),
-    inset 0 1px 2px rgba(255, 255, 255, 0.7) !important;
+  background: rgba(255, 255, 255, 0.8) !important;
   transform: translateY(-2px);
 }
 
 .teacher-card {
-  background: rgba(255, 255, 255, 0.75) !important;
-  box-shadow:
-    0 8px 32px rgba(31, 38, 135, 0.08),
-    inset 0 1px 2px rgba(255, 255, 255, 0.6) !important;
-  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  background: rgba(255, 255, 255, 0.6) !important;
   border-radius: 16px !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
 }
 
 .teacher-card:hover {
-  box-shadow:
-    0 12px 40px rgba(31, 38, 135, 0.12),
-    inset 0 1px 2px rgba(255, 255, 255, 0.7) !important;
+  background: rgba(255, 255, 255, 0.8) !important;
 }
 
 .course-name {
@@ -2064,28 +2228,24 @@ export default {
 .floating-refresh-btn {
   position: fixed;
   bottom: 30px;
-  left: 30px;
+  right: 30px;
   width: 50px;
   height: 50px;
   font-size: 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 999;
 }
 
 .refresh-btn {
   position: fixed;
   bottom: 30px;
-  left: 30px;
+  right: 30px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   background: rgba(255, 255, 255, 0.7);
-  box-shadow:
-    0 2px 8px rgba(0, 0, 0, 0.06),
-    inset 0 1px 2px rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.8);
   cursor: pointer;
-  padding: 8px;
+  padding: 10px;
   border-radius: 50%;
   color: #4b5563;
   transition: all 0.2s ease;
@@ -2094,14 +2254,37 @@ export default {
 
 @media screen and (max-width: 768px) {
   .refresh-btn {
-    bottom: 20px;
-    left: 20px;
-    padding: 6px;
+    bottom: 30px;
+    right: 30px;
+    left: auto;
+    width: 56px;
+    height: 56px;
+    padding: 0;
+    background: linear-gradient(135deg, #0091FF 0%, #1E6EF4 100%);
+    border: none;
+    box-shadow: 0 4px 16px rgba(0, 145, 255, 0.4);
+    color: white;
+  }
+  .refresh-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #0091FF 0%, #1E6EF4 100%);
+    color: white;
+    opacity: 0.9;
   }
   .refresh-icon {
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
   }
+}
+
+:deep(.el-button) {
+  padding: 10px 24px !important;
+  font-size: 14px !important;
+  border-radius: 20px !important;
+  border: none !important;
+}
+
+:deep(.el-button--primary) {
+  background: linear-gradient(135deg, #0091FF 0%, #1E6EF4 100%) !important;
 }
 
 .refresh-btn:hover:not(:disabled) {
@@ -2233,174 +2416,527 @@ export default {
 /* 手机端适配 (1080P竖屏) */
 @media screen and (max-width: 768px) {
   .header {
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 15px;
-    gap: 10px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     z-index: 1000;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    border-radius: 0 0 20px 20px;
+    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
   }
-  
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .header-left .logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+  }
+
   .header h2 {
     font-size: 16px;
+    font-weight: 600;
     margin: 0;
+    color: #333;
   }
-  
-  .main {
-    margin-top: 120px;
-  }
-  
+
   .user-info {
-    flex-wrap: wrap;
-    gap: 8px;
+    display: none;
   }
-  
-  .user-info span {
+
+  .mobile-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #0091FF 0%, #1E6EF4 100%);
+    border-radius: 50%;
+    color: white;
     font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(0, 145, 255, 0.4);
+    cursor: pointer;
+    transition: all 0.3s ease;
   }
-  
+
+  .mobile-menu-btn:active {
+    transform: scale(0.95);
+  }
+
   .main {
-    flex-direction: column;
-  }
-  
-  .el-aside {
-    width: 100% !important;
-    max-width: 100%;
     padding: 10px;
+    padding-top: 80px;
   }
-  
-  .el-menu {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    background: transparent !important;
+
+  :deep(.el-card) {
+    border-radius: 20px;
+    border: none;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(10px);
   }
-  
-  .el-menu-item {
-    flex: 1 1 auto;
-    min-width: 80px;
-    text-align: center;
-    background: #545c64;
-    border-radius: 6px;
-    margin: 0 !important;
+
+  :deep(.el-card__body) {
+    padding: 15px;
   }
-  
-  .el-main {
-    padding: 10px;
-  }
-  
-  .card-header {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-  }
-  
-  .card-header > div {
-    display: flex;
-    gap: 8px;
-  }
-  
+
   .search-form {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
+    display: none;
   }
-  
-  .search-form .el-form-item {
+
+  .mobile-filter-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    height: 56px;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    color: #666;
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 15px;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+  }
+
+  .mobile-filter-btn:active {
+    background: rgba(255, 255, 255, 0.8);
+  }
+
+  .mobile-filter-panel {
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  }
+
+  .mobile-filter-item {
+    margin-bottom: 12px;
+  }
+
+  .mobile-filter-item:last-child {
     margin-bottom: 0;
   }
-  
-  .search-form .el-input,
-  .search-form .el-select {
+
+  .mobile-filter-item label {
+    display: block;
+    font-size: 13px;
+    color: #999;
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+
+  .mobile-filter-item :deep(.el-input),
+  .mobile-filter-item :deep(.el-select) {
     width: 100% !important;
   }
   
-  .course-grid {
-    grid-template-columns: 1fr;
-    gap: 15px;
+  .mobile-cs-search-box {
+    display: block;
+    margin-bottom: 15px;
   }
   
+  .mobile-cs-search-box :deep(.el-input__wrapper) {
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  }
+
+  .mobile-filter-item :deep(.el-input__wrapper) {
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 12px;
+    box-shadow: none;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+  }
+
+  .mobile-filter-item :deep(.el-select__wrapper) {
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 12px;
+    box-shadow: none;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+  }
+
+  .el-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+
+  .el-row > .el-col {
+    width: calc(50% - 7.5px);
+    padding: 0;
+  }
+
   .course-card {
     padding: 15px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
   }
-  
-  .course-card h3 {
-    font-size: 16px;
+
+  .course-card .card-header {
     margin-bottom: 10px;
   }
-  
+
+  .course-card .course-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #333;
+    display: block;
+  }
+
+  .course-tags {
+    margin-top: 8px;
+  }
+
+  .course-tags :deep(.el-tag) {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(0, 145, 255, 0.1);
+    border: none;
+    color: #0088ff;
+  }
+
   .course-info {
-    font-size: 14px;
+    font-size: 13px;
   }
-  
-  .course-actions {
-    flex-direction: column;
-    gap: 8px;
-    align-items: stretch;
+
+  .course-info p {
+    margin: 6px 0;
+    color: #666;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
-  
-  .course-actions .el-button {
-    font-size: 20px;
-    padding: 15px 20px;
+
+  .card-actions {
+    margin-top: 12px;
+  }
+
+  .card-actions :deep(.el-button) {
     width: 100%;
+    padding: 10px !important;
+    font-size: 13px !important;
+    border-radius: 12px !important;
   }
-  
-  .teacher-cards {
-    grid-template-columns: 1fr;
+
+  .loading-skeleton {
+    display: flex;
+    flex-wrap: wrap;
     gap: 15px;
   }
-  
-  .teacher-card {
-    padding: 15px;
+
+  .loading-skeleton .el-col {
+    width: calc(50% - 7.5px);
   }
-  
-  .teacher-card h3 {
+
+  .loading-skeleton .skeleton-card {
+    padding: 15px;
+    border-radius: 16px;
+  }
+
+  .mobile-menu-overlay {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1001;
+  }
+
+  .mobile-menu-panel {
+    display: block;
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 280px;
+    height: 100%;
+    background: white;
+    z-index: 1002;
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
+    animation: slideIn 0.3s ease;
+  }
+
+  @keyframes slideIn {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  .mobile-menu-header {
+    padding: 60px 20px 20px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .mobile-menu-item {
+    padding: 18px 20px;
     font-size: 16px;
+    color: #333;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    border-bottom: 1px solid #f8f8f8;
   }
-  
-  .teacher-actions {
-    flex-direction: column;
-    gap: 8px;
-    align-items: stretch;
+
+  .mobile-menu-item:active {
+    background: #f5f7fa;
   }
-  
-  .teacher-actions .el-button {
-    font-size: 20px;
-    padding: 15px 20px;
-    width: 100%;
+
+  .mobile-menu-item.logout {
+    color: #ff4d4f;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    border-bottom: none;
+    border-top: 1px solid #f0f0f0;
   }
-  
-  .evaluation-item {
-    padding: 15px;
+
+  :deep(.el-pagination) {
+    justify-content: center;
+    padding: 15px 0;
+    overflow: visible;
   }
-  
-  .evaluation-content {
-    font-size: 14px;
+
+  :deep(.el-pagination .el-pager),
+  :deep(.el-pagination .el-pagination__sizes) {
+    display: none !important;
   }
-  
-  .feedback-item {
-    padding: 15px;
+
+  :deep(.el-pagination .btn-prev),
+  :deep(.el-pagination .btn-next) {
+    min-width: 44px;
+    height: 44px;
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 14px;
+    font-size: 18px;
   }
-  
-  .feedback-content {
-    font-size: 14px;
+
+  :deep(.el-pagination .el-pagination__jump) {
+    font-size: 15px;
+    color: #333;
+    margin-left: 8px;
   }
-  
-  .user-item {
-    padding: 15px;
+
+  :deep(.el-pagination .el-pagination__jump .el-input__wrapper) {
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: none;
   }
-  
-  .user-info-detail {
-    font-size: 14px;
+
+  :deep(.el-pagination .el-pagination__jump .el-input__inner) {
+    font-size: 15px;
+    font-weight: 600;
+    color: #0088ff;
   }
-  
-  .glass-btn {
-    font-size: 12px;
-    padding: 10px 20px;
-    border-radius: 20px;
+
+  :deep(.el-empty) {
+    padding: 40px 0;
   }
+}
+
+/* 下拉菜单美化 */
+:deep(.el-dropdown-menu) {
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(20px) saturate(180%);
+  border-radius: 16px !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    inset 0 1px 2px rgba(255, 255, 255, 0.5) !important;
+  padding: 8px !important;
+  overflow: hidden;
+}
+
+:deep(.el-dropdown-menu__item) {
+  border-radius: 10px !important;
+  margin: 3px 4px !important;
+  padding: 8px 16px !important;
+  font-size: 14px !important;
+  transition: all 0.25s ease !important;
+}
+
+:deep(.el-dropdown-menu__item:hover) {
+  background: linear-gradient(135deg, rgba(0, 145, 255, 0.12), rgba(30, 110, 244, 0.12)) !important;
+  color: #0091FF !important;
+}
+
+:deep(.el-dropdown-menu__item.is-divided) {
+  border-top: 1px solid rgba(0, 0, 0, 0.06) !important;
+  margin-top: 6px !important;
+  padding-top: 10px !important;
+}
+
+/* 表格美化 */
+:deep(.el-table) {
+  border-radius: 12px !important;
+  overflow: hidden;
+  background: transparent !important;
+}
+
+:deep(.el-table::before) {
+  display: none !important;
+}
+
+:deep(.el-table th.el-table__cell) {
+  background: linear-gradient(135deg, #f8f9fb 0%, #eef1f5 100%) !important;
+  color: #333 !important;
+  font-weight: 600 !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+  padding: 12px 8px !important;
+}
+
+:deep(.el-table td.el-table__cell) {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04) !important;
+  padding: 10px 8px !important;
+  color: #555 !important;
+}
+
+:deep(.el-table .el-table__row--striped td.el-table__cell) {
+  background: rgba(245, 247, 250, 0.5) !important;
+}
+
+/* 对话框美化 */
+:deep(.el-dialog) {
+  border-radius: 20px !important;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  box-shadow:
+    0 16px 48px rgba(0, 0, 0, 0.15),
+    inset 0 1px 2px rgba(255, 255, 255, 0.5) !important;
+}
+
+:deep(.el-dialog__header) {
+  padding: 18px 22px 12px !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+}
+
+:deep(.el-dialog__title) {
+  font-size: 17px !important;
+  font-weight: 600 !important;
+  color: #333 !important;
+}
+
+:deep(.el-dialog__body) {
+  padding: 20px 22px !important;
+}
+
+:deep(.el-dialog__footer) {
+  padding: 14px 22px 20px !important;
+  border-top: 1px solid rgba(0, 0, 0, 0.05) !important;
+}
+
+:deep(.el-dialog__headerbtn .el-dialog__close) {
+  color: #999 !important;
+  font-size: 18px !important;
+  transition: all 0.2s ease !important;
+}
+
+:deep(.el-dialog__headerbtn:hover .el-dialog__close) {
+  color: #333 !important;
+  transform: rotate(90deg);
+}
+
+/* 标签美化 */
+:deep(.el-tag) {
+  border-radius: 8px !important;
+  border: none !important;
+  backdrop-filter: blur(8px);
+  font-size: 12px !important;
+  padding: 0 10px !important;
+  height: 24px !important;
+  line-height: 24px !important;
+}
+
+:deep(.el-tag--info) {
+  background: rgba(144, 147, 153, 0.15) !important;
+  color: #666 !important;
+}
+
+:deep(.el-tag--success) {
+  background: rgba(103, 194, 58, 0.15) !important;
+  color: #52c41a !important;
+}
+
+:deep(.el-tag--danger) {
+  background: rgba(255, 77, 79, 0.15) !important;
+  color: #f5222d !important;
+}
+
+:deep(.el-tag--warning) {
+  background: rgba(250, 173, 20, 0.15) !important;
+  color: #faad14 !important;
+}
+
+/* 描述列表美化 */
+:deep(.el-descriptions) {
+  border-radius: 12px !important;
+  overflow: hidden;
+}
+
+:deep(.el-descriptions__label) {
+  background: linear-gradient(135deg, #f8f9fb 0%, #eef1f5 100%) !important;
+  color: #555 !important;
+  font-weight: 500 !important;
+  width: 110px !important;
+}
+
+:deep(.el-descriptions__content) {
+  color: #333 !important;
+}
+
+/* 空状态美化 */
+:deep(.el-empty__description p) {
+  color: #999 !important;
+}
+
+/* 搜索表单区域美化 */
+.search-form {
+  background: rgba(255, 255, 255, 0.35) !important;
+  backdrop-filter: blur(10px);
+  border-radius: 14px !important;
+  padding: 16px 20px !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+}
+
+/* 卡片头部标题美化 */
+.card-header > span:first-child {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: #333 !important;
 }
 </style>

@@ -62,7 +62,7 @@ export default {
   computed: {
     bgStyle() {
       return {
-        backgroundImage: "url('/images/login-bg.jpg')",
+        backgroundImage: "url('/images/dashboard-bg.jpg')",
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'

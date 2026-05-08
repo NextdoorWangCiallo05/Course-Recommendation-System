@@ -5,6 +5,11 @@
         <component :is="Component" />
       </transition>
     </router-view>
+    <div class="icp-footer">
+      <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">
+        鲁ICP备2026021969号
+      </a>
+    </div>
   </div>
 </template>
 
@@ -372,5 +377,23 @@ body {
 /* 全局弹出框（popper）毛玻璃效果 */
 .el-popper.is-light .el-select-dropdown {
   margin-top: 4px !important;
+}
+
+/* ICP 备案号页面底部 */
+.icp-footer {
+  text-align: center;
+  padding: 16px 0 12px;
+  z-index: 9999;
+}
+
+.icp-footer a {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.icp-footer a:hover {
+  color: rgba(255, 255, 255, 0.8);
 }
 </style>
