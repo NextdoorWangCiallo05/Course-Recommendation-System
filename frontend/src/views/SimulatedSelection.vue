@@ -1513,8 +1513,9 @@
         </div>
         <div v-if="currentStep === 13" class="nav-buttons">
           <el-button @click="goBack">上一步</el-button>
-          <el-button type="primary" @click="exportSummary">导出选课单</el-button>
-          <el-button type="success" @click="resetSelection">重新选择</el-button>
+          <el-button type="primary" @click="exportSummary">导出 TXT</el-button>
+          <el-button type="success" @click="exportSummaryCSV">导出 CSV</el-button>
+          <el-button type="warning" @click="resetSelection">重新选择</el-button>
         </div>
       </el-card>
     </el-main>
@@ -1768,8 +1769,10 @@ export default {
     summaryCourses() {
       const courses = []
       const semesterMap = {
-        1: '第1学期', 2: '第2学期', 3: '第3学期', 4: '第4学期',
-        5: '第5学期', 6: '第6学期', 7: '第7学期', 8: '第8学期'
+        '大一上': '大一上学期', '大一下': '大一下学期',
+        '大二上': '大二上学期', '大二下': '大二下学期',
+        '大三上': '大三上学期', '大三下': '大三下学期',
+        '大四上': '大四上学期', '大四下': '大四下学期'
       }
       const addCourse = (course, sel, category) => {
         if (!sel || !sel.selected) return
@@ -1787,7 +1790,7 @@ export default {
               category: category,
               name: course.name + (qty > 1 ? ` (${i + 1})` : ''),
               teacher: teacherName || '待定',
-              semester: semesterMap[sel.semester] || `第${sel.semester}学期`,
+              semester: semesterMap[sel.semester] || sel.semester,
               credit: course.credit
             })
           }
@@ -1796,7 +1799,7 @@ export default {
             category: category,
             name: course.name,
             teacher: teacherName || '待定',
-            semester: semesterMap[sel.semester] || `第${sel.semester}学期`,
+            semester: semesterMap[sel.semester] || sel.semester,
             credit: course.credit
           })
         }
@@ -2305,8 +2308,10 @@ export default {
     },
     exportSummary() {
       const semesterMap = {
-        1: '第1学期', 2: '第2学期', 3: '第3学期', 4: '第4学期',
-        5: '第5学期', 6: '第6学期', 7: '第7学期', 8: '第8学期'
+        '大一上': '大一上学期', '大一下': '大一下学期',
+        '大二上': '大二上学期', '大二下': '大二下学期',
+        '大三上': '大三上学期', '大三下': '大三下学期',
+        '大四上': '大四上学期', '大四下': '大四下学期'
       }
       let text = '===== 选课清单 =====\n\n'
       text += `专业: ${this.getMajorLabel(this.selectedMajor)}\n`
@@ -2316,7 +2321,7 @@ export default {
       text += '序号\t课程类别\t课程名称\t授课教师\t修读学期\t学分\n'
       text += '-\t-\t-\t-\t-\t-\n'
       this.summaryCourses.forEach((c, i) => {
-        text += `${i + 1}\t${c.category}\t${c.name}\t${c.teacher}\t${c.semester}\t${c.credit}\n`
+        text += `${i + 1}\t${c.category}\t${c.name}\t${c.teacher}\t${semesterMap[c.semester] || c.semester}\t${c.credit}\n`
       })
       text += '\n===== 学分明细 =====\n'
       text += `通识必修: ${this.selectedGeneralCredits} 学分\n`
@@ -2338,6 +2343,52 @@ export default {
       a.click()
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
+    },
+    exportSummaryCSV() {
+      const semesterMap = {
+        '大一上': '大一上学期', '大一下': '大一下学期',
+        '大二上': '大二上学期', '大二下': '大二下学期',
+        '大三上': '大三上学期', '大三下': '大三下学期',
+        '大四上': '大四上学期', '大四下': '大四下学期'
+      }
+      const BOM = '\uFEFF'
+      let csv = BOM
+      csv += '选课清单\n\n'
+      csv += `专业,${this.csvEscape(this.getMajorLabel(this.selectedMajor))}\n`
+      if (this.selectedSubMajor) csv += `方向,${this.csvEscape(this.getSubMajorLabel(this.selectedSubMajor))}\n`
+      if (this.selectedClassType) csv += `班级,${this.csvEscape(this.getClassTypeLabel(this.selectedClassType))}\n`
+      csv += `总学分,${this.totalSelectedCreditsWithIndividual}\n\n`
+      csv += '序号,课程类别,课程名称,授课教师,修读学期,学分\n'
+      this.summaryCourses.forEach((c, i) => {
+        csv += `${i + 1},${this.csvEscape(c.category)},${this.csvEscape(c.name)},${this.csvEscape(c.teacher)},${this.csvEscape(semesterMap[c.semester] || c.semester)},${c.credit}\n`
+      })
+      csv += '\n学分明细\n'
+      csv += `通识必修,${this.selectedGeneralCredits}\n`
+      csv += `英语必修,${this.selectedEnglishCredits}\n`
+      csv += `体育必修,${this.selectedPECredits}\n`
+      csv += `学科必修,${this.selectedAcademicCredits}\n`
+      csv += `专业必修,${this.selectedMajorRequiredCredits}\n`
+      csv += `专业选修,${this.selectedMajorElectiveCredits}\n`
+      csv += `实践课,${this.selectedPracticeCredits}\n`
+      csv += `通识选修,${this.selectedGeneralElectiveCredits}\n`
+      csv += `个性课程,${this.selectedIndividualCredits}\n`
+      csv += `总计,${this.totalSelectedCreditsWithIndividual}\n`
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `选课清单_${this.getMajorLabel(this.selectedMajor)}.csv`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    },
+    csvEscape(value) {
+      const s = String(value || '')
+      if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+        return `"${s.replace(/"/g, '""')}"`
+      }
+      return s
     },
     initGeneralCourseSelections() {
       this.generalCourseSelections = {}

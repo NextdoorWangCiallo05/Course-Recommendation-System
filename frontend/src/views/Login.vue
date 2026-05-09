@@ -1,6 +1,7 @@
 <template>
   <div class="login-container" :style="bgStyle">
     <div class="login-box">
+      <img src="/images/logo.png" class="login-logo" alt="logo">
       <h2>选课推荐系统</h2>
       <el-form :model="form" label-position="left" label-width="60px">
         <el-form-item label="账号">
@@ -93,6 +94,14 @@ export default {
     0 8px 32px rgba(0, 0, 0, 0.1),
     inset 0 1px 2px rgba(255, 255, 255, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.login-logo {
+  display: block;
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 16px;
+  object-fit: contain;
 }
 
 .login-box h2 {

@@ -36,11 +36,11 @@
 
 | 类别 | 技术 | 用途 |
 |------|------|------|
-| 框架 | Flask 2.3 | Web 服务框架 |
+| 框架 | Flask 3.0 | Web 服务框架 |
 | ORM | Flask-SQLAlchemy | 数据库 ORM |
 | 认证 | Flask-JWT-Extended | JWT Token 认证 |
-| 数据库 | MySQL 8.0 / SQLite | 生产 / 开发 |
-| 缓存 | Redis | 数据缓存加速 |
+| 数据库 | MySQL 8.4 / SQLite | 生产 / 开发 |
+| 缓存 | Redis 8.6 | 数据缓存加速 |
 | WSGI | Gunicorn | 生产环境部署 |
 
 ### 前端
@@ -57,9 +57,9 @@
 
 | 类别 | 技术 |
 |------|------|
-| Web 服务器 | Nginx（反向代理 + 缓存 + Gzip） |
+| Web 服务器 | Nginx 1.30（反向代理 + 缓存 + Gzip） |
 | 进程管理 | Systemd |
-| 云平台 | 腾讯云轻量应用服务器（Ubuntu 22.04） |
+| 云平台 | 腾讯云轻量应用服务器（Ubuntu 24.04） |
 
 ---
 
@@ -67,9 +67,14 @@
 
 ### 环境要求
 
-- Python 3.10+
-- Node.js 16+
-- MySQL 8.0（生产）/ SQLite（开发）
+| 组件 | 最低版本 | 推荐版本 | 说明 |
+|------|---------|---------|------|
+| Python | 3.8 | **3.12+** | 代码语法兼容 3.6+，Flask 3.0 要求 ≥3.8 |
+| Node.js | 16 | **20+** | 前端构建环境 |
+| npm | 8 | **10+** | 随 Node.js 版本自动匹配 |
+| MySQL | 8.0 | **8.4** | 生产环境，认证插件 `caching_sha2_password` |
+| SQLite | 3.x | 3.x | 开发环境，无需单独安装 |
+| Redis | 7.0 | **8.6** | 缓存服务，基础命令全版本兼容 |
 
 ### 1. 启动后端
 
@@ -181,6 +186,7 @@ Select/
 │   └── logs/                        # 日志目录
 │
 ├── frontend/                         # Vue 前端
+│   ├── dist/                        # 构建产物（上传到服务器）
 │   ├── src/
 │   │   ├── api/                     # API 封装
 │   │   ├── router/                  # 路由配置
@@ -209,7 +215,7 @@ Select/
 
 ```
 用户 → Nginx (80) → Gunicorn (2 workers) → MySQL + Redis
-         ├── 静态资源 → 直接返回（强缓存 1 年）
+         ├── 静态资源 → 直接返回（强缓存 1 年）[root: /home/ubuntu/course-recommendation/frontend/dist]
          └── /api/* → 反向代理到后端
 ```
 
@@ -231,12 +237,15 @@ cd frontend
 npm install
 npm run build
 
-# 4. 配置 Nginx
+# 4. 上传前端静态文件到服务器
+scp -r dist/* ubuntu@<服务器IP>:/home/ubuntu/course-recommendation/frontend/dist/
+
+# 5. 配置 Nginx
 sudo cp backend/deploy/nginx.conf /etc/nginx/sites-available/course-recommendation
 sudo ln -s /etc/nginx/sites-available/course-recommendation /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl restart nginx
 
-# 5. 配置 Systemd 服务
+# 6. 配置 Systemd 服务
 sudo cp backend/deploy/course-recommendation.service /etc/systemd/system/
 sudo systemctl daemon-reload && sudo systemctl enable --now course-recommendation
 ```

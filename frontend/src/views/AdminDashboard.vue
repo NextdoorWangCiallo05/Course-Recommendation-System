@@ -9,6 +9,7 @@
       <div class="user-info">
         <span class="welcome-text">欢迎, {{ username }}</span>
         <el-button v-if="isAdmin" type="primary" size="small" class="admin-panel-btn" @click="toggleAdminMode">{{ adminMode ? '返回学生端' : '管理面板' }}</el-button>
+        <el-button v-if="!adminMode" class="sim-btn" type="primary" size="small" @click="openSimulatedSelection">模拟选课</el-button>
         <el-dropdown trigger="click" @command="handleMenuCommand">
           <div class="menu-btn">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -19,7 +20,6 @@
           </div>
           <template #dropdown>
             <el-dropdown-menu>
-              <el-dropdown-item v-if="!adminMode" command="simulated">模拟选课</el-dropdown-item>
               <el-dropdown-item v-if="!adminMode" command="feedback">反馈</el-dropdown-item>
               <el-dropdown-item v-if="!adminMode" command="userCenter">用户中心</el-dropdown-item>
               <el-dropdown-item divided command="logout">退出</el-dropdown-item>
@@ -359,7 +359,7 @@
               <el-input v-model="adminTeacherKeyword" placeholder="搜索教师名（支持拼音缩写）" clearable @input="debounceFilterAdminCourses" style="width: 150px;" />
             </el-form-item>
           </el-form>
-          <div class="mobile-filter-btn" @click="toggleFilterPanel">
+          <div v-if="isMobile" class="mobile-filter-btn" @click="toggleFilterPanel">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="20" y2="12"/><line x1="12" y1="18" x2="20" y2="18"/></svg>
             <span>筛选</span>
           </div>
@@ -937,7 +937,8 @@ export default {
       adminLoading: false,
       adminSearchDebounceTimer: null,
       showMobileMenu: false,
-      showFilterPanel: false
+      showFilterPanel: false,
+      isMobile: window.innerWidth <= 768
     }
   },
   async mounted() {
@@ -946,12 +947,16 @@ export default {
     if (adminMode === 'true') {
       this.adminMode = true
     }
+    window.addEventListener('resize', this.onWindowResize)
     await this.loadMajors()
     await this.loadTeachers()
     await this.loadCourses()
     await this.loadEvaluations()
     await this.loadAdminCourses()
     await this.loadMyFeedbacks()
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.onWindowResize)
   },
   computed: {
     mainBgStyle() {
@@ -1602,6 +1607,9 @@ export default {
     toggleMobileMenu() {
       this.showMobileMenu = !this.showMobileMenu
     },
+    onWindowResize() {
+      this.isMobile = window.innerWidth <= 768
+    },
     toggleFilterPanel() {
       this.showFilterPanel = !this.showFilterPanel
     },
@@ -1799,7 +1807,21 @@ export default {
 }
 
 .admin-panel-btn {
+  height: 36px !important;
+  padding: 0 20px !important;
   border-radius: 20px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  border: none !important;
+}
+
+.sim-btn {
+  height: 36px !important;
+  padding: 0 20px !important;
+  border-radius: 20px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  border: none !important;
 }
 
 .menu-btn {
@@ -1825,6 +1847,10 @@ export default {
 }
 
 .mobile-menu-btn {
+  display: none;
+}
+
+.mobile-filter-btn {
   display: none;
 }
 
@@ -2196,12 +2222,13 @@ export default {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  background: linear-gradient(135deg, #0091FF 0%, #1E6EF4 100%);
+  border: none;
   cursor: pointer;
   padding: 10px;
   border-radius: 50%;
-  color: #4b5563;
+  color: white;
+  box-shadow: 0 4px 16px rgba(0, 145, 255, 0.4);
   transition: all 0.2s ease;
   z-index: 999;
 }
@@ -2242,8 +2269,9 @@ export default {
 }
 
 .refresh-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.6);
-  color: #0088FF;
+  background: linear-gradient(135deg, #0091FF 0%, #1E6EF4 100%);
+  color: white;
+  opacity: 0.9;
 }
 
 .refresh-btn:disabled {
