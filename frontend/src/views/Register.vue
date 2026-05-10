@@ -33,6 +33,8 @@
       </div>
       <div class="tips">
         <p>注册后需要等待超级管理员审核</p>
+        <p class="tip-rule">用户名：3-20位字母/数字/下划线</p>
+        <p class="tip-rule">密码：至少8位，包含字母和数字</p>
         <p style="margin-top: 10px;">
           <span class="back-link" @click="$router.push('/login')">已有账号？返回登录</span>
         </p>
@@ -79,8 +81,20 @@ export default {
         ElMessage.warning('两次密码输入不一致')
         return
       }
-      if (this.form.password.length < 6) {
-        ElMessage.warning('密码长度不能少于6位')
+      if (this.form.password.length < 8) {
+        ElMessage.warning('密码长度至少8位')
+        return
+      }
+      if (!/[a-zA-Z]/.test(this.form.password) || !/[0-9]/.test(this.form.password)) {
+        ElMessage.warning('密码必须包含字母和数字')
+        return
+      }
+      if (!/^[a-zA-Z0-9_]+$/.test(this.form.username)) {
+        ElMessage.warning('用户名只能包含字母、数字和下划线')
+        return
+      }
+      if (this.form.username.length < 3 || this.form.username.length > 20) {
+        ElMessage.warning('用户名长度需在3-20位之间')
         return
       }
       if (this.isRegistering) return
@@ -301,6 +315,11 @@ export default {
   .tips {
     font-size: 12px;
     margin-top: 15px;
+  }
+  .tip-rule {
+    font-size: 12px;
+    color: #999;
+    margin-top: 4px;
   }
 }
 </style>

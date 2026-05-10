@@ -1,0 +1,13 @@
+.env
+.venv
+venv
+__pycache__
+*.pyc
+*.pyo
+*.db
+*.db-bak
+var/
+logs/
+.git
+.gitignore
+README.md

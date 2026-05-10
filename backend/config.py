@@ -10,7 +10,7 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///course_recommendation.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or 'jwt-secret-key-change-in-production'
-    JWT_ACCESS_TOKEN_EXPIRES = timedelta(days=30)  # Token 30天过期
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=24)  # Token 24小时过期
     TIMEZONE = 'Asia/Shanghai'  # 东八区
     
     # MySQL 连接池配置（仅在使用 MySQL 时生效）

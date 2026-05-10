@@ -8,6 +8,14 @@
       </div>
       <div class="user-info">
         <span class="welcome-text">欢迎, {{ username }}</span>
+        <el-badge v-if="isSuperAdmin" :value="pendingCount" :hidden="pendingCount === 0" class="notif-badge">
+          <el-button size="small" circle class="notif-btn" @click="openNotification">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+          </el-button>
+        </el-badge>
         <el-button v-if="isAdmin" type="primary" size="small" class="admin-panel-btn" @click="toggleAdminMode">{{ adminMode ? '返回学生端' : '管理面板' }}</el-button>
         <el-button v-if="!adminMode" class="sim-btn" type="primary" size="small" @click="openSimulatedSelection">模拟选课</el-button>
         <el-dropdown trigger="click" @command="handleMenuCommand">
@@ -22,6 +30,7 @@
             <el-dropdown-menu>
               <el-dropdown-item v-if="!adminMode" command="feedback">反馈</el-dropdown-item>
               <el-dropdown-item v-if="!adminMode" command="userCenter">用户中心</el-dropdown-item>
+              <el-dropdown-item command="settings">设置</el-dropdown-item>
               <el-dropdown-item divided command="logout">退出</el-dropdown-item>
             </el-dropdown-menu>
           </template>
@@ -40,6 +49,7 @@
         >
           <el-menu-item index="courses">课程管理</el-menu-item>
           <el-menu-item index="evaluations">评价管理</el-menu-item>
+          <el-menu-item index="analysis">数据分析</el-menu-item>
           <el-menu-item index="feedback">用户反馈</el-menu-item>
           <el-menu-item v-if="isSuperAdmin" index="users">账户管理</el-menu-item>
         </el-menu>
@@ -518,6 +528,7 @@
       <div class="mobile-menu-item" @click="handleMenuCommand('simulated'); showMobileMenu = false">模拟选课</div>
       <div class="mobile-menu-item" @click="handleMenuCommand('feedback'); showMobileMenu = false">反馈</div>
       <div class="mobile-menu-item" @click="handleMenuCommand('userCenter'); showMobileMenu = false">用户中心</div>
+      <div class="mobile-menu-item" @click="handleMenuCommand('settings'); showMobileMenu = false">设置</div>
       <div class="mobile-menu-item logout" @click="handleMenuCommand('logout'); showMobileMenu = false">退出</div>
     </div>
 
@@ -528,6 +539,7 @@
           <el-descriptions-item label="学分">{{ selectedAdminCourse.credit }}</el-descriptions-item>
           <el-descriptions-item label="开课学院" v-if="selectedAdminCourse.college">{{ selectedAdminCourse.college }}</el-descriptions-item>
           <el-descriptions-item label="考核方式">{{ selectedAdminCourse.assessment_method || '闭卷笔试' }}</el-descriptions-item>
+          <el-descriptions-item v-if="selectedAdminCourse.topic_category" label="主题类别">{{ selectedAdminCourse.topic_category }}</el-descriptions-item>
           <el-descriptions-item label="专业">
             <div v-for="major_id in selectedAdminCourse.major_ids" :key="major_id" style="margin-bottom: 5px;">
               <span>{{ getMajorName(major_id) }}:</span>
@@ -850,6 +862,45 @@
         <path d="M3 3v5h5" />
       </svg>
     </button>
+
+    <el-dialog v-model="showSettingsDialog" title="设置" width="420px">
+      <div class="settings-content">
+        <div class="settings-item">
+          <div class="settings-item-left">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+            <span>深色模式</span>
+          </div>
+          <el-switch v-model="isDarkMode" @change="toggleDarkMode" />
+        </div>
+      </div>
+    </el-dialog>
+
+    <el-dialog v-model="notificationVisible" title="通知中心" width="480px" :close-on-click-modal="false">
+      <div v-if="pendingUsers.length === 0" class="notif-empty">
+        <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#ccc" stroke-width="1.5" stroke-linecap="round">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+        <p>暂无新通知</p>
+      </div>
+      <div v-else class="notif-list">
+        <div v-for="user in pendingUsers" :key="user.id" class="notif-item">
+          <div class="notif-item-left">
+            <div class="notif-item-name">{{ user.real_name || user.username }}</div>
+            <div class="notif-item-info">
+              申请成为 <el-tag size="small" :type="user.requested_role === 'admin' ? 'danger' : 'success'">{{ user.requested_role === 'admin' ? '管理员' : '学生' }}</el-tag>
+              <span class="notif-item-time">{{ user.created_at }}</span>
+            </div>
+          </div>
+          <div class="notif-item-actions">
+            <el-button size="small" type="primary" @click="approveUser(user, 'approve')">通过</el-button>
+            <el-button size="small" type="danger" plain @click="approveUser(user, 'reject')">拒绝</el-button>
+          </div>
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -932,13 +983,19 @@ export default {
       myFeedbacks: [],
       isRefreshing: false,
       selectedCourses: [],
+      notificationVisible: false,
+      pendingUsers: [],
+      pendingCount: 0,
+      notifTimer: null,
       adminCurrentPage: 1,
       adminPageSize: 12,
       adminLoading: false,
       adminSearchDebounceTimer: null,
       showMobileMenu: false,
       showFilterPanel: false,
-      isMobile: window.innerWidth <= 768
+      isMobile: window.innerWidth <= 768,
+      showSettingsDialog: false,
+      isDarkMode: localStorage.getItem('darkMode') === 'true'
     }
   },
   async mounted() {
@@ -954,12 +1011,23 @@ export default {
     await this.loadEvaluations()
     await this.loadAdminCourses()
     await this.loadMyFeedbacks()
+    this.startNotificationPolling()
   },
   beforeDestroy() {
     window.removeEventListener('resize', this.onWindowResize)
+    if (this.notifTimer) clearInterval(this.notifTimer)
   },
   computed: {
     mainBgStyle() {
+      if (this.isDarkMode) {
+        return {
+          backgroundColor: 'rgba(0, 0, 0, 0.55)',
+          backgroundImage: 'url(/images/dashboard-bg.jpg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundAttachment: 'fixed'
+        }
+      }
       return {
         backgroundColor: 'rgba(255, 255, 255, 0.4)',
         backgroundImage: 'url(/images/dashboard-bg.jpg)',
@@ -1070,6 +1138,37 @@ export default {
         ElMessage.success('刷新成功')
       }, 500)
     },
+    async fetchPendingUsers() {
+      try {
+        const res = await request.get('/notifications/pending-users')
+        this.pendingUsers = res.users
+        this.pendingCount = res.count
+      } catch (e) {
+      }
+    },
+    startNotificationPolling() {
+      if (this.isSuperAdmin) {
+        this.fetchPendingUsers()
+        this.notifTimer = setInterval(() => this.fetchPendingUsers(), 10000)
+      }
+    },
+    openNotification() {
+      this.notificationVisible = true
+      this.fetchPendingUsers()
+    },
+    async approveUser(user, action) {
+      try {
+        await request.put(`/users/${user.id}/approve`, { action: action })
+        if (action === 'approve') {
+          ElMessage.success(`已通过 ${user.real_name || user.username} 的申请`)
+        } else {
+          ElMessage.success(`已拒绝 ${user.real_name || user.username} 的申请`)
+        }
+        this.fetchPendingUsers()
+      } catch (e) {
+        ElMessage.error('操作失败')
+      }
+    },
     handleCourseSelectionChange(val) {
       this.selectedCourses = val
     },
@@ -1115,6 +1214,8 @@ export default {
       } else if (index === 'preview') {
         this.activeMenu = index
         this.loadPreviewCourses()
+      } else if (index === 'analysis') {
+        this.$router.push('/data-analysis')
       } else {
         this.activeMenu = index
       }
@@ -1746,9 +1847,21 @@ export default {
         case 'userCenter':
           this.goToUserCenter()
           break
+        case 'settings':
+          this.showSettingsDialog = true
+          break
         case 'logout':
           this.handleLogout()
           break
+      }
+    },
+    toggleDarkMode(val) {
+      if (val) {
+        document.documentElement.classList.add('dark-mode')
+        localStorage.setItem('darkMode', 'true')
+      } else {
+        document.documentElement.classList.remove('dark-mode')
+        localStorage.setItem('darkMode', 'false')
       }
     }
   }
@@ -2810,102 +2923,6 @@ export default {
   background: rgba(245, 247, 250, 0.5) !important;
 }
 
-/* 对话框美化 */
-:deep(.el-dialog) {
-  border-radius: 20px !important;
-  overflow: hidden;
-  background: rgba(255, 255, 255, 0.92) !important;
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.5) !important;
-  box-shadow:
-    0 16px 48px rgba(0, 0, 0, 0.15),
-    inset 0 1px 2px rgba(255, 255, 255, 0.5) !important;
-}
-
-:deep(.el-dialog__header) {
-  padding: 18px 22px 12px !important;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
-}
-
-:deep(.el-dialog__title) {
-  font-size: 17px !important;
-  font-weight: 600 !important;
-  color: #333 !important;
-}
-
-:deep(.el-dialog__body) {
-  padding: 20px 22px !important;
-}
-
-:deep(.el-dialog__footer) {
-  padding: 14px 22px 20px !important;
-  border-top: 1px solid rgba(0, 0, 0, 0.05) !important;
-}
-
-:deep(.el-dialog__headerbtn .el-dialog__close) {
-  color: #999 !important;
-  font-size: 18px !important;
-  transition: all 0.2s ease !important;
-}
-
-:deep(.el-dialog__headerbtn:hover .el-dialog__close) {
-  color: #333 !important;
-  transform: rotate(90deg);
-}
-
-/* 标签美化 */
-:deep(.el-tag) {
-  border-radius: 8px !important;
-  border: none !important;
-  backdrop-filter: blur(8px);
-  font-size: 12px !important;
-  padding: 0 10px !important;
-  height: 24px !important;
-  line-height: 24px !important;
-}
-
-:deep(.el-tag--info) {
-  background: rgba(144, 147, 153, 0.15) !important;
-  color: #666 !important;
-}
-
-:deep(.el-tag--success) {
-  background: rgba(103, 194, 58, 0.15) !important;
-  color: #52c41a !important;
-}
-
-:deep(.el-tag--danger) {
-  background: rgba(255, 77, 79, 0.15) !important;
-  color: #f5222d !important;
-}
-
-:deep(.el-tag--warning) {
-  background: rgba(250, 173, 20, 0.15) !important;
-  color: #faad14 !important;
-}
-
-/* 描述列表美化 */
-:deep(.el-descriptions) {
-  border-radius: 12px !important;
-  overflow: hidden;
-}
-
-:deep(.el-descriptions__label) {
-  background: linear-gradient(135deg, #f8f9fb 0%, #eef1f5 100%) !important;
-  color: #555 !important;
-  font-weight: 500 !important;
-  width: 110px !important;
-}
-
-:deep(.el-descriptions__content) {
-  color: #333 !important;
-}
-
-/* 空状态美化 */
-:deep(.el-empty__description p) {
-  color: #999 !important;
-}
-
 /* 搜索表单区域美化 */
 .search-form {
   background: rgba(255, 255, 255, 0.35) !important;
@@ -2920,5 +2937,247 @@ export default {
   font-size: 16px !important;
   font-weight: 600 !important;
   color: #333 !important;
+}
+
+/* 通知中心 */
+.notif-badge {
+  margin-right: 6px;
+}
+.notif-btn {
+  border: 1px solid #dcdfe6 !important;
+  background: #fff !important;
+  color: #666 !important;
+  padding: 0 !important;
+  width: 32px !important;
+  height: 32px !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+}
+.notif-btn:hover {
+  color: #0088ff !important;
+  border-color: #0088ff !important;
+}
+.notif-empty {
+  text-align: center;
+  padding: 40px 0;
+  color: #999;
+}
+.notif-empty p {
+  margin-top: 12px;
+  font-size: 14px;
+}
+.notif-list {
+  max-height: 420px;
+  overflow-y: auto;
+}
+.notif-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+.notif-item:last-child {
+  border-bottom: none;
+}
+.notif-item-left {
+  flex: 1;
+  min-width: 0;
+}
+.notif-item-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 4px;
+}
+.notif-item-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #999;
+}
+.notif-item-time {
+  font-size: 12px;
+  color: #bbb;
+}
+.notif-item-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: 12px;
+}
+.settings-content {
+  padding: 10px 0;
+}
+.settings-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+.settings-item:last-child {
+  border-bottom: none;
+}
+.settings-item-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 15px;
+  color: #333;
+  font-weight: 500;
+}
+.settings-item-left svg {
+  color: #666;
+}
+/* ========== 深色模式覆盖（scoped） ========== */
+html.dark-mode .header {
+  background: rgba(20, 20, 45, 0.85) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+html.dark-mode .header h2 {
+  color: #e0e0e0 !important;
+}
+html.dark-mode .welcome-text {
+  color: #999 !important;
+}
+html.dark-mode .main .el-card {
+  background: rgba(30, 30, 55, 0.75) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+html.dark-mode .el-aside {
+  background: rgba(25, 25, 50, 0.8) !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+html.dark-mode .search-form {
+  background: rgba(20, 20, 45, 0.5) !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+html.dark-mode .course-card {
+  background: rgba(30, 30, 55, 0.75) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+html.dark-mode .course-card .course-name {
+  color: #e0e0e0 !important;
+}
+html.dark-mode .course-info p {
+  color: #ccc !important;
+}
+html.dark-mode .course-desc {
+  color: #999 !important;
+}
+html.dark-mode .skeleton-block {
+  background: linear-gradient(90deg, rgba(60, 60, 90, 0.3) 25%, rgba(80, 80, 110, 0.5) 50%, rgba(60, 60, 90, 0.3) 75%) !important;
+}
+html.dark-mode .teacher-card {
+  background: rgba(30, 30, 55, 0.75) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+html.dark-mode .teacher-name {
+  color: #e0e0e0 !important;
+}
+html.dark-mode .teacher-course-item {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+html.dark-mode .teacher-course-item:hover {
+  background: rgba(0, 136, 255, 0.1) !important;
+}
+html.dark-mode .card-header-tabs :deep(.el-tabs) {
+  background: rgba(0, 0, 0, 0.3) !important;
+}
+html.dark-mode .card-header > span:first-child {
+  color: #e0e0e0 !important;
+}
+html.dark-mode .mobile-menu-panel {
+  background: rgba(20, 20, 45, 0.95) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+html.dark-mode .mobile-menu-item {
+  color: #ccc !important;
+}
+html.dark-mode .mobile-menu-item.logout {
+  color: #ff6b6b !important;
+}
+html.dark-mode .mobile-menu-overlay {
+  background: rgba(0, 0, 0, 0.5) !important;
+}
+html.dark-mode .eval-item {
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+html.dark-mode .eval-header .eval-teacher {
+  color: #e0e0e0 !important;
+}
+html.dark-mode .eval-comment {
+  color: #bbb !important;
+}
+html.dark-mode .eval-time {
+  color: #777 !important;
+}
+html.dark-mode .refresh-btn {
+  background: rgba(30, 30, 55, 0.8) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3) !important;
+}
+html.dark-mode .preview-rating-item {
+  color: #ccc !important;
+}
+html.dark-mode .notif-item {
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+html.dark-mode .notif-item-name {
+  color: #e0e0e0 !important;
+}
+html.dark-mode .notif-empty p {
+  color: #888 !important;
+}
+html.dark-mode .settings-item {
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+html.dark-mode .settings-item-left {
+  color: #e0e0e0 !important;
+}
+html.dark-mode .settings-item-left svg {
+  color: #999 !important;
+}
+html.dark-mode :deep(.el-descriptions__label) {
+  background: linear-gradient(135deg, rgba(40, 40, 65, 0.9), rgba(30, 30, 50, 0.9)) !important;
+  color: #aaa !important;
+}
+html.dark-mode :deep(.el-descriptions__content) {
+  color: #e0e0e0 !important;
+  background: rgba(20, 20, 35, 0.4) !important;
+}
+/* 修复移动端搜索框和筛选框的深色模式样式 */
+html.dark-mode .mobile-cs-search-box :deep(.el-input__wrapper) {
+  background: rgba(30, 30, 55, 0.8) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3) !important;
+}
+html.dark-mode .mobile-filter-panel {
+  background: rgba(30, 30, 55, 0.8) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+html.dark-mode .mobile-filter-item :deep(.el-input__wrapper) {
+  background: rgba(40, 40, 65, 0.8) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+html.dark-mode .mobile-filter-item :deep(.el-select__wrapper) {
+  background: rgba(40, 40, 65, 0.8) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+html.dark-mode .mobile-filter-item label {
+  color: #aaa !important;
+}
+@media screen and (max-width: 768px) {
+  html.dark-mode .header {
+    background: rgba(15, 15, 30, 0.9) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+  html.dark-mode :deep(.el-card) {
+    background: rgba(30, 30, 55, 0.8) !important;
+  }
 }
 </style>

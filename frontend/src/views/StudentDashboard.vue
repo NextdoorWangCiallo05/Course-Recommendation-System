@@ -18,8 +18,10 @@
           </div>
           <template #dropdown>
             <el-dropdown-menu>
+              <el-dropdown-item command="analysis">数据分析</el-dropdown-item>
               <el-dropdown-item command="feedback">反馈</el-dropdown-item>
               <el-dropdown-item command="userCenter">用户中心</el-dropdown-item>
+              <el-dropdown-item command="settings">设置</el-dropdown-item>
               <el-dropdown-item divided command="logout">退出</el-dropdown-item>
             </el-dropdown-menu>
           </template>
@@ -122,7 +124,7 @@
           </div>
           <el-row v-if="!isLoading" :gutter="20">
             <el-col v-for="course in paginatedCourses" :key="course.id" :xs="24" :sm="12" :md="8" :lg="6">
-              <el-card class="course-card" shadow="hover">
+              <el-card class="course-card" shadow="hover" @click="showDetail(course)">
                 <template #header>
                   <div class="card-header">
                     <span class="course-name">{{ course.name }}</span>
@@ -158,7 +160,7 @@
                   </p>
                 </div>
                 <div class="card-actions">
-                  <el-button type="primary" size="small" @click="showDetail(course)">查看详情</el-button>
+                  <el-button type="primary" size="small" @click.stop="showDetail(course)">查看详情</el-button>
                 </div>
               </el-card>
             </el-col>
@@ -236,47 +238,43 @@
     <div v-if="showMobileMenu" class="mobile-menu-panel">
       <div class="mobile-menu-header">菜单</div>
       <div class="mobile-menu-item" @click="handleMenuCommand('simulated'); showMobileMenu = false">模拟选课</div>
+      <div class="mobile-menu-item" @click="handleMenuCommand('analysis'); showMobileMenu = false">数据分析</div>
       <div class="mobile-menu-item" @click="handleMenuCommand('feedback'); showMobileMenu = false">反馈</div>
       <div class="mobile-menu-item" @click="handleMenuCommand('userCenter'); showMobileMenu = false">用户中心</div>
+      <div class="mobile-menu-item" @click="handleMenuCommand('settings'); showMobileMenu = false">设置</div>
       <div class="mobile-menu-item logout" @click="handleMenuCommand('logout'); showMobileMenu = false">退出</div>
     </div>
 
-    <el-dialog v-model="showDetailDialog" :title="selectedCourse?.name" width="600px">
+    <el-dialog v-model="showDetailDialog" :title="selectedCourse?.name" width="620px">
       <div v-if="selectedCourse" class="detail-content">
         <el-descriptions :column="1" border>
           <el-descriptions-item label="课程名">{{ selectedCourse.name }}</el-descriptions-item>
           <el-descriptions-item label="学分">{{ selectedCourse.credit }}</el-descriptions-item>
           <el-descriptions-item label="开课学院" v-if="selectedCourse.college">{{ selectedCourse.college }}</el-descriptions-item>
           <el-descriptions-item label="考核方式">{{ selectedCourse.assessment_method || '闭卷笔试' }}</el-descriptions-item>
-          <el-descriptions-item v-if="selectedCourse.topic_category" label="主题类别">{{ selectedCourse.topic_category }}</el-descriptions-item>
           <el-descriptions-item label="专业">
-            <div v-for="major_id in selectedCourse.major_ids" :key="major_id" style="margin-bottom: 5px;">
-              <span>{{ getMajorName(major_id) }}:</span>
-              <el-tag size="small" :type="selectedCourse.major_course_types && selectedCourse.major_course_types[major_id] === '必修' ? 'danger' : 'success'">
-                {{ selectedCourse.major_course_types && selectedCourse.major_course_types[major_id] || '必修' }}
+            <div>
+              <span>{{ selectedCourse.major_names }}</span>
+              <el-tag v-if="selectedMajor && selectedCourse.major_course_types && selectedCourse.major_course_types[selectedMajor]"
+                size="small" :type="selectedCourse.major_course_types[selectedMajor] === '必修' ? 'danger' : 'success'" style="margin-left: 10px;">
+                {{ selectedCourse.major_course_types[selectedMajor] }}
               </el-tag>
             </div>
           </el-descriptions-item>
           <el-descriptions-item label="授课教师">{{ selectedCourse.teacher_names }}</el-descriptions-item>
           <el-descriptions-item label="课程性质">{{ selectedCourse.course_types ? selectedCourse.course_types.join('、') : (selectedCourse.course_type || '') }}</el-descriptions-item>
           <el-descriptions-item label="开课学期">{{ selectedCourse.semesters ? selectedCourse.semesters.join('、') : '' }}</el-descriptions-item>
-          <el-descriptions-item v-if="selectedCourse.major_study_semesters && selectedCourse.major_ids" label="建议修读学期">
-            <div v-for="major_id in selectedCourse.major_ids" :key="major_id" style="margin-bottom: 5px;">
-              <span v-if="selectedCourse.major_study_semesters[major_id] && selectedCourse.major_study_semesters[major_id].length > 0">
-                {{ getMajorName(major_id) }}: {{ selectedCourse.major_study_semesters[major_id].join('、') }}
-              </span>
-            </div>
+          <el-descriptions-item v-if="selectedMajor && selectedCourse.major_study_semesters && selectedCourse.major_study_semesters[selectedMajor] && selectedCourse.major_study_semesters[selectedMajor].length > 0" label="建议修读学期">
+            {{ selectedCourse.major_study_semesters[selectedMajor].join('、') }}
           </el-descriptions-item>
           <el-descriptions-item v-if="selectedCourse.teacher_ratings && Object.keys(selectedCourse.teacher_ratings).length > 0" label="教师评分" :span="1">
-            <div v-for="(rating, teacherId) in selectedCourse.teacher_ratings" :key="teacherId" style="margin-bottom: 10px;">
+            <div v-for="(rating, teacherId) in selectedCourse.teacher_ratings" :key="teacherId" style="margin-bottom: 5px;">
               <span>{{ getTeacherName(teacherId) }}: </span>
-              <el-rate :model-value="rating" disabled show-score style="width: 120px;" />
+              <el-rate :model-value="rating" disabled show-score text-color="#FF8D28" style="width: 120px;" />
               <span style="margin-left: 30px; color: #909399; font-size: 12px;">({{ selectedCourse.teacher_evaluation_counts?.[teacherId] || 0 }}人评价)</span>
             </div>
           </el-descriptions-item>
-          <el-descriptions-item v-else label="评分">
-            暂无评价
-          </el-descriptions-item>
+          <el-descriptions-item v-else label="评分">暂无评价</el-descriptions-item>
           <el-descriptions-item label="课程概述">{{ selectedCourse.description || '暂无介绍' }}</el-descriptions-item>
         </el-descriptions>
         <h4 style="margin-top: 20px; margin-bottom: 10px;">教师评价</h4>
@@ -332,6 +330,20 @@
         <el-button @click="showTeacherEvalDialog = false">取消</el-button>
         <el-button type="primary" @click="submitTeacherEval">提交评价</el-button>
       </template>
+    </el-dialog>
+
+    <el-dialog v-model="showSettingsDialog" title="设置" width="420px">
+      <div class="settings-content">
+        <div class="settings-item">
+          <div class="settings-item-left">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+            <span>深色模式</span>
+          </div>
+          <el-switch v-model="isDarkMode" @change="toggleDarkMode" />
+        </div>
+      </div>
     </el-dialog>
 
     <el-dialog v-model="showFeedbackDialog" title="用户反馈" width="500px">
@@ -416,7 +428,9 @@ export default {
       csSearchDebounceTimer: null,
       showMobileMenu: false,
       showFilterPanel: false,
-      isMobile: window.innerWidth <= 768
+      isMobile: window.innerWidth <= 768,
+      showSettingsDialog: false,
+      isDarkMode: localStorage.getItem('darkMode') === 'true'
     }
   },
   async mounted() {
@@ -432,6 +446,15 @@ export default {
   },
   computed: {
     mainBgStyle() {
+      if (this.isDarkMode) {
+        return {
+          backgroundColor: 'rgba(0, 0, 0, 0.55)',
+          backgroundImage: 'url(/images/dashboard-bg.jpg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundAttachment: 'fixed'
+        }
+      }
       return {
         backgroundColor: 'rgba(255, 255, 255, 0.4)',
         backgroundImage: 'url(/images/dashboard-bg.jpg)',
@@ -634,15 +657,30 @@ export default {
         case 'simulated':
           this.openSimulatedSelection()
           break
+        case 'analysis':
+          this.$router.push('/data-analysis')
+          break
         case 'feedback':
           this.openFeedback()
           break
         case 'userCenter':
           this.$router.push('/user-center')
           break
+        case 'settings':
+          this.showSettingsDialog = true
+          break
         case 'logout':
           this.handleLogout()
           break
+      }
+    },
+    toggleDarkMode(val) {
+      if (val) {
+        document.documentElement.classList.add('dark-mode')
+        localStorage.setItem('darkMode', 'true')
+      } else {
+        document.documentElement.classList.remove('dark-mode')
+        localStorage.setItem('darkMode', 'false')
       }
     },
     toggleMobileMenu() {
@@ -1719,6 +1757,213 @@ export default {
   
   :deep(.el-empty) {
     padding: 40px 0;
+  }
+}
+
+/* 下拉菜单美化（与管理端一致） */
+:deep(.el-dropdown-menu) {
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(20px) saturate(180%);
+  border-radius: 16px !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    inset 0 1px 2px rgba(255, 255, 255, 0.5) !important;
+  padding: 8px !important;
+  overflow: hidden;
+}
+
+:deep(.el-dropdown-menu__item) {
+  border-radius: 10px !important;
+  margin: 3px 4px !important;
+  padding: 8px 16px !important;
+  font-size: 14px !important;
+  transition: all 0.25s ease !important;
+}
+
+:deep(.el-dropdown-menu__item:hover) {
+  background: linear-gradient(135deg, rgba(0, 145, 255, 0.12), rgba(30, 110, 244, 0.12)) !important;
+  color: #0091FF !important;
+}
+
+:deep(.el-dropdown-menu__item.is-divided) {
+  border-top: 1px solid rgba(0, 0, 0, 0.06) !important;
+  margin-top: 6px !important;
+  padding-top: 10px !important;
+}
+
+html.dark-mode :deep(.el-dropdown-menu) {
+  background: rgba(25, 25, 50, 0.95) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark-mode :deep(.el-dropdown-menu__item) {
+  color: #ccc !important;
+}
+
+html.dark-mode :deep(.el-dropdown-menu__item:hover) {
+  background: rgba(0, 136, 255, 0.15) !important;
+  color: #66b5ff !important;
+}
+
+html.dark-mode :deep(.el-dropdown-menu__item.is-divided) {
+  border-top-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.settings-content {
+  padding: 10px 0;
+}
+.settings-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+.settings-item:last-child {
+  border-bottom: none;
+}
+.settings-item-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 15px;
+  color: #333;
+  font-weight: 500;
+}
+.settings-item-left svg {
+  color: #666;
+}
+/* ========== 深色模式覆盖（scoped） ========== */
+html.dark-mode .header {
+  background: rgba(20, 20, 45, 0.85) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+html.dark-mode .header h2 {
+  color: #e0e0e0 !important;
+}
+html.dark-mode .welcome-text {
+  color: #999 !important;
+}
+html.dark-mode .main .el-card {
+  background: rgba(30, 30, 55, 0.75) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+html.dark-mode .search-form {
+  background: rgba(20, 20, 45, 0.5) !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+html.dark-mode .course-card {
+  background: rgba(30, 30, 55, 0.75) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+html.dark-mode .course-card .card-header .course-name {
+  color: #e0e0e0 !important;
+}
+html.dark-mode .course-info p {
+  color: #ccc !important;
+}
+html.dark-mode .course-desc strong {
+  color: #ccc !important;
+}
+html.dark-mode .skeleton-block {
+  background: linear-gradient(90deg, rgba(60, 60, 90, 0.3) 25%, rgba(80, 80, 110, 0.5) 50%, rgba(60, 60, 90, 0.3) 75%) !important;
+}
+html.dark-mode .teacher-card {
+  background: rgba(30, 30, 55, 0.75) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+html.dark-mode .teacher-card .teacher-name {
+  color: #e0e0e0 !important;
+}
+html.dark-mode .teacher-course-item {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+html.dark-mode .teacher-course-item:hover {
+  background: rgba(0, 136, 255, 0.1) !important;
+}
+html.dark-mode .teacher-course-item .course-name-small {
+  color: #e0e0e0 !important;
+}
+html.dark-mode .card-header-tabs :deep(.el-tabs) {
+  background: rgba(0, 0, 0, 0.3) !important;
+}
+html.dark-mode .mobile-menu-panel {
+  background: rgba(20, 20, 45, 0.95) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+html.dark-mode .mobile-menu-item {
+  color: #ccc !important;
+}
+html.dark-mode .mobile-menu-item.logout {
+  color: #ff6b6b !important;
+}
+html.dark-mode .mobile-menu-overlay {
+  background: rgba(0, 0, 0, 0.5) !important;
+}
+html.dark-mode .eval-item {
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+html.dark-mode .eval-header .eval-teacher {
+  color: #e0e0e0 !important;
+}
+html.dark-mode .eval-comment {
+  color: #bbb !important;
+}
+html.dark-mode .eval-time {
+  color: #777 !important;
+}
+html.dark-mode .refresh-btn {
+  background: rgba(30, 30, 55, 0.8) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3) !important;
+}
+html.dark-mode .settings-item {
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+html.dark-mode .settings-item-left {
+  color: #e0e0e0 !important;
+}
+html.dark-mode .settings-item-left svg {
+  color: #999 !important;
+}
+html.dark-mode :deep(.el-descriptions__label) {
+  background: linear-gradient(135deg, rgba(40, 40, 65, 0.9), rgba(30, 30, 50, 0.9)) !important;
+  color: #aaa !important;
+}
+html.dark-mode :deep(.el-descriptions__content) {
+  color: #e0e0e0 !important;
+  background: rgba(20, 20, 35, 0.4) !important;
+}
+/* 修复移动端搜索框和筛选框的深色模式样式 */
+html.dark-mode .mobile-cs-search-box :deep(.el-input__wrapper) {
+  background: rgba(30, 30, 55, 0.8) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3) !important;
+}
+html.dark-mode .mobile-filter-panel {
+  background: rgba(30, 30, 55, 0.8) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+html.dark-mode .mobile-filter-item :deep(.el-input__wrapper) {
+  background: rgba(40, 40, 65, 0.8) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+html.dark-mode .mobile-filter-item :deep(.el-select__wrapper) {
+  background: rgba(40, 40, 65, 0.8) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+html.dark-mode .mobile-filter-item label {
+  color: #aaa !important;
+}
+@media screen and (max-width: 768px) {
+  html.dark-mode .header {
+    background: rgba(15, 15, 30, 0.9) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+  html.dark-mode :deep(.el-card) {
+    background: rgba(30, 30, 55, 0.8) !important;
   }
 }
 </style>

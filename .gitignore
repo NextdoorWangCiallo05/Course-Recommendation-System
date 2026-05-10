@@ -8,6 +8,15 @@ build/
 *.db
 instance/
 .env
+*.pyc
+*.pyo
+
+# Python virtual environment
+Include/
+Lib/
+Scripts/
+venv/
+.venv/
 
 # Node
 node_modules/
@@ -40,3 +49,10 @@ Redis/
 
 # Root tools (not backend/tools)
 /tools/
+
+# Knowledge / Project docs
+knowledge.md
+Project.md
+
+# Dev/test scripts
+test_notif.py

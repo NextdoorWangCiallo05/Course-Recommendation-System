@@ -1523,6 +1523,7 @@
 </template>
 
 <script>
+import { ElMessage, ElMessageBox } from 'element-plus'
 import request from '@/api'
 import { Loading } from '@element-plus/icons-vue'
 
@@ -1859,7 +1860,7 @@ export default {
         this.generalCourses = response
         this.initGeneralCourseSelections()
       } catch (error) {
-        this.$message.error('加载课程失败，请稍后重试')
+        ElMessage.error('加载课程失败，请稍后重试')
       } finally {
         this.loading = false
       }
@@ -1884,7 +1885,7 @@ export default {
         this.initEnglishCourseSelections()
         this.currentStep = 5
       } catch (error) {
-        this.$message.error('加载英语课程失败，请稍后重试')
+        ElMessage.error('加载英语课程失败，请稍后重试')
       } finally {
         this.loading = false
       }
@@ -1942,8 +1943,7 @@ export default {
         this.initPECourseSelections()
         this.currentStep = 6
       } catch (error) {
-        console.error('加载体育课程失败:', error)
-        this.$message.error('加载体育课程失败，请稍后重试')
+        ElMessage.error('加载体育课程失败，请稍后重试')
       } finally {
         this.loading = false
       }
@@ -1983,13 +1983,13 @@ export default {
         const primaryName = this.getPrimaryNameFromIntermediate(course.name)
         const hasPrimary = this.peCourses.some(c => c.name === primaryName)
         if (!hasPrimary) {
-          this.$message.warning(`请先选择「${primaryName}」课程`)
+          ElMessage.warning(`请先选择「${primaryName}」课程`)
           this.peCourseSelections[course.id].selected = false
           return
         }
         const primarySelected = this.peCourses.some(c => c.name === primaryName && this.peCourseSelections[c.id] && this.peCourseSelections[c.id].selected)
         if (!primarySelected) {
-          this.$message.warning(`请先选择「${primaryName}」课程`)
+          ElMessage.warning(`请先选择「${primaryName}」课程`)
           this.peCourseSelections[course.id].selected = false
           return
         }
@@ -2013,7 +2013,7 @@ export default {
         this.initAcademicCourseSelections(majorId)
         this.currentStep = 7
       } catch (error) {
-        this.$message.error('加载课程失败，请稍后重试')
+        ElMessage.error('加载课程失败，请稍后重试')
       } finally {
         this.loading = false
       }
@@ -2065,8 +2065,7 @@ export default {
         this.initMajorRequiredCourseSelections(majorId)
         this.currentStep = 8
       } catch (error) {
-        console.error('加载专业必修课程失败:', error)
-        this.$message.error('加载专业必修课程失败，请稍后重试')
+        ElMessage.error('加载专业必修课程失败，请稍后重试')
       } finally {
         this.loading = false
       }
@@ -2107,7 +2106,7 @@ export default {
         this.initMajorElectiveCourseSelections(majorId)
         this.currentStep = 9
       } catch (error) {
-        this.$message.error('加载专业选修课程失败，请稍后重试')
+        ElMessage.error('加载专业选修课程失败，请稍后重试')
       } finally {
         this.loading = false
       }
@@ -2158,7 +2157,7 @@ export default {
         this.initPracticeCourseSelections(majorId)
         this.currentStep = 10
       } catch (error) {
-        this.$message.error('加载实践课程失败，请稍后重试')
+        ElMessage.error('加载实践课程失败，请稍后重试')
       } finally {
         this.loading = false
       }
@@ -2197,8 +2196,7 @@ export default {
         this.initGeneralElectiveCourseSelections()
         this.currentStep = 11
       } catch (error) {
-        console.error('加载通识选修课程失败:', error)
-        this.$message.error('加载通识选修课程失败，请稍后重试')
+        ElMessage.error('加载通识选修课程失败，请稍后重试')
       } finally {
         this.loading = false
       }
@@ -2268,7 +2266,7 @@ export default {
         this.initIndividualCourseSelections()
         this.currentStep = 12
       } catch (error) {
-        this.$message.error('加载个性课程失败，请稍后重试')
+        ElMessage.error('加载个性课程失败，请稍后重试')
       } finally {
         this.loading = false
       }
@@ -2543,7 +2541,7 @@ export default {
       }
     },
     handleLogout() {
-      this.$confirm('确定要退出模拟选课吗？', '提示', {
+      ElMessageBox.confirm('确定要退出模拟选课吗？', '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'

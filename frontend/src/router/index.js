@@ -10,7 +10,8 @@ const routes = [
   { path: '/user-management', component: () => import('../views/UserManagement.vue'), meta: { requiresAuth: true, role: 'superadmin' } },
   { path: '/feedback', component: () => import('../views/Feedback.vue'), meta: { requiresAuth: true } },
   { path: '/user-center', component: () => import('../views/UserCenter.vue'), meta: { requiresAuth: true } },
-  { path: '/simulated-selection', component: () => import('../views/SimulatedSelection.vue'), meta: { requiresAuth: true } }
+  { path: '/simulated-selection', component: () => import('../views/SimulatedSelection.vue'), meta: { requiresAuth: true } },
+  { path: '/data-analysis', component: () => import('../views/DataAnalysis.vue'), meta: { requiresAuth: true } }
 ]
 
 const router = createRouter({

@@ -1,21 +1,54 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, get_jwt
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from werkzeug.security import generate_password_hash, check_password_hash
 from config import Config
 from models import db, User, Major, Teacher, Course, Evaluation, Feedback, course_major, course_teacher, course_semester, course_course_type, course_major_semester
 from cache import cache
 from datetime import datetime, timezone, timedelta
 import os
-from sqlalchemy import inspect
+import re
+import logging
+from sqlalchemy import inspect, func
 from pypinyin import lazy_pinyin
+
+# 日志配置（自动适配 Docker 和开发环境）
+LOG_DIR = '/var/log/course-recommendation'
+if not os.path.exists(LOG_DIR):
+    LOG_DIR = os.path.join(os.path.dirname(__file__), 'logs')
+os.makedirs(LOG_DIR, exist_ok=True)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    handlers=[
+        logging.FileHandler(os.path.join(LOG_DIR, 'app.log')),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.config.from_object(Config)
-CORS(app)
+CORS(app, origins=['https://courselect.xyz', 'https://www.courselect.xyz', 'http://courselect.xyz', 'http://www.courselect.xyz', 'http://localhost:8080', 'http://localhost', 'http://127.0.0.1'])
 db.init_app(app)
 jwt = JWTManager(app)
 cache.init_app(app)
+limiter = Limiter(app=app, key_func=get_remote_address, default_limits=["200 per hour"])
+
+# 请求日志
+@app.before_request
+def log_request():
+    if request.path.startswith('/api/'):
+        logger.info(f'{request.method} {request.path} - {request.remote_addr}')
+
+@app.after_request
+def log_response(response):
+    if request.path.startswith('/api/'):
+        logger.info(f'{request.method} {request.path} - {response.status_code}')
+    return response
 
 # 东八区时区
 CST = timezone(timedelta(hours=8))
@@ -66,7 +99,7 @@ def init_db():
         
         # 如果数据库中没有表，才进行初始化
         if len(tables) == 0:
-            print('数据库为空，正在初始化...')
+            logger.info('数据库为空，正在初始化...')
             db.create_all()
             db.session.commit()
             
@@ -88,9 +121,9 @@ def init_db():
             ]
             db.session.add_all(majors)
             db.session.commit()
-            print('数据库初始化完成！（包含用户和基本专业）')
+            logger.info('数据库初始化完成！（包含用户和基本专业）')
         else:
-            print('数据库已存在，跳过初始化')
+            logger.info('数据库已存在，跳过初始化')
             # 确保表结构是最新的（只创建不存在的表）
             db.create_all()
             db.session.commit()
@@ -101,7 +134,7 @@ def init_db():
                 superadmin = User(username='superadmin', password=generate_password_hash('superadmin123'), role='superadmin')
                 db.session.add(superadmin)
                 db.session.commit()
-                print('超级管理员账户已创建：superadmin / superadmin123')
+                logger.info('超级管理员账户已创建：superadmin / superadmin123')
 
 @app.route('/api/login', methods=['POST'])
 def login():
@@ -115,6 +148,7 @@ def login():
     return jsonify({'msg': '用户名或密码错误'}), 401
 
 @app.route('/api/register', methods=['POST'])
+@limiter.limit("3 per hour")
 def register():
     data = request.get_json()
     if not data.get('username') or not data.get('password') or not data.get('role'):
@@ -123,6 +157,17 @@ def register():
         return jsonify({'msg': '请填写真实姓名和学号'}), 400
     if data['role'] not in ['admin', 'student']:
         return jsonify({'msg': '角色只能是管理员或学生'}), 400
+    if len(data['username']) < 3 or len(data['username']) > 20:
+        return jsonify({'msg': '用户名长度需在3-20位之间'}), 400
+    if not re.match(r'^[a-zA-Z0-9_]+$', data['username']):
+        return jsonify({'msg': '用户名只能包含字母、数字和下划线'}), 400
+    password = data['password']
+    if len(password) < 8:
+        return jsonify({'msg': '密码长度至少8位'}), 400
+    if not re.search(r'[a-zA-Z]', password) or not re.search(r'[0-9]', password):
+        return jsonify({'msg': '密码必须包含字母和数字'}), 400
+    if not re.match(r'^[A-Za-z0-9]+$', data['student_id']):
+        return jsonify({'msg': '学号格式不正确'}), 400
     if User.query.filter_by(username=data['username']).first():
         return jsonify({'msg': '用户名已存在'}), 400
     user = User(
@@ -135,6 +180,7 @@ def register():
     )
     db.session.add(user)
     db.session.commit()
+    logger.info(f'新用户注册等待审核: {data["username"]} ({data["real_name"]})')
     return jsonify({'msg': '注册成功，等待超级管理员审核'}), 200
 
 @app.route('/api/users', methods=['GET'])
@@ -220,6 +266,24 @@ def delete_user(user_id):
     db.session.delete(target_user)
     db.session.commit()
     return jsonify({'msg': '账户已注销'}), 200
+
+@app.route('/api/notifications/pending-users', methods=['GET'])
+@jwt_required()
+def get_pending_users_notification():
+    claims = get_jwt()
+    if claims['role'] not in ['admin', 'superadmin']:
+        return jsonify({'msg': '权限不足'}), 403
+    pending = User.query.filter_by(role='pending').all()
+    return jsonify({
+        'count': len(pending),
+        'users': [{
+            'id': u.id,
+            'username': u.username,
+            'real_name': u.real_name or '',
+            'requested_role': u.requested_role or '',
+            'created_at': u.created_at.strftime('%Y-%m-%d %H:%M:%S') if u.created_at else ''
+        } for u in pending]
+    })
 
 @app.route('/api/users/<int:user_id>/role', methods=['PUT'])
 @jwt_required()
@@ -872,13 +936,13 @@ def clear_majors():
 @app.route('/api/clear-all', methods=['DELETE'])
 @jwt_required()
 def clear_all():
-    print('收到清空所有数据的请求！')
+    logger.warning('收到清空所有数据的请求！')
     claims = get_jwt()
-    print('Claims:', claims)
+    logger.warning(f'Claims: {claims}')
     if claims['role'] != 'superadmin':
         return jsonify({'msg': '权限不足'}), 403
+    logger.warning('开始删除数据...')
     # 删除所有数据（按正确顺序）
-    print('开始删除数据...')
     Evaluation.query.delete()
     Course.query.delete()
     # 清空关联表
@@ -889,7 +953,7 @@ def clear_all():
     # 保留admin和student用户
     User.query.filter(User.username.notin_(['admin', 'student'])).delete()
     db.session.commit()
-    print('数据清空完成！')
+    logger.warning('数据清空完成！')
     return jsonify({'msg': '所有数据已清空'})
 
 @app.route('/api/feedbacks', methods=['POST'])
@@ -999,6 +1063,53 @@ def delete_account():
     db.session.delete(user)
     db.session.commit()
     return jsonify({'msg': '账号已注销'})
+
+@app.route('/api/stats/teacher-ratings', methods=['GET'])
+@jwt_required()
+def stats_teacher_ratings():
+    results = db.session.query(
+        Teacher.id,
+        Teacher.name,
+        func.coalesce(func.avg(Evaluation.rating), 0).label('avg_rating'),
+        func.count(Evaluation.id).label('eval_count')
+    ).outerjoin(Evaluation).group_by(Teacher.id).order_by(func.avg(Evaluation.rating).desc()).all()
+    return jsonify([{
+        'id': r.id, 'name': r.name,
+        'avg_rating': round(float(r.avg_rating), 1),
+        'eval_count': r.eval_count
+    } for r in results])
+
+@app.route('/api/stats/course-types', methods=['GET'])
+@jwt_required()
+def stats_course_types():
+    results = db.session.query(
+        course_course_type.c.course_type,
+        func.count(course_course_type.c.course_id).label('count')
+    ).group_by(course_course_type.c.course_type).all()
+    return jsonify([{'type': r.course_type, 'count': r.count} for r in results])
+
+@app.route('/api/stats/major-courses', methods=['GET'])
+@jwt_required()
+def stats_major_courses():
+    results = db.session.query(
+        Major.name,
+        func.count(course_major.c.course_id).label('count')
+    ).join(Major).group_by(Major.id).all()
+    return jsonify([{'major': r.name, 'count': r.count} for r in results])
+
+@app.route('/api/stats/eval-trend', methods=['GET'])
+@jwt_required()
+def stats_eval_trend():
+    results = db.session.query(
+        func.date(Evaluation.created_at).label('date'),
+        func.count(Evaluation.id).label('count'),
+        func.avg(Evaluation.rating).label('avg_rating')
+    ).filter(Evaluation.created_at.isnot(None)).group_by(func.date(Evaluation.created_at)).order_by(func.date(Evaluation.created_at)).all()
+    return jsonify([{
+        'date': str(r.date),
+        'count': r.count,
+        'avg_rating': round(float(r.avg_rating), 1) if r.avg_rating else 0
+    } for r in results])
 
 def create_app():
     return app
