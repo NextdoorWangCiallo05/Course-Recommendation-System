@@ -195,7 +195,6 @@ docker compose exec -T mysql mysql -u root -pRootPass2026! course_recommendation
 
 | 角色 | 用户名 | 密码 | 说明 |
 |------|--------|------|------|
-| 超级管理员 | superadmin | superadmin123 | 用户审核、数据清空 |
 | 管理员 | admin | admin123 | 课程管理、评价管理 |
 | 学生 | student | student123 | 检索课程、评价教师、模拟选课 |
 
