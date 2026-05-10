@@ -959,7 +959,18 @@ export default {
 }
 
 .search-form {
+  background: rgba(255, 255, 255, 0.35) !important;
+  backdrop-filter: blur(10px);
+  border-radius: 14px !important;
+  padding: 16px 20px !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
   margin-bottom: 20px;
+}
+
+.card-header > span:first-child {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: #333 !important;
 }
 
 .course-card {
@@ -1863,6 +1874,9 @@ html.dark-mode .course-card .card-header .course-name {
 html.dark-mode .course-info p {
   color: #ccc !important;
 }
+html.dark-mode .course-desc {
+  color: #999 !important;
+}
 html.dark-mode .course-desc strong {
   color: #ccc !important;
 }
@@ -1888,6 +1902,9 @@ html.dark-mode .teacher-course-item .course-name-small {
 }
 html.dark-mode .card-header-tabs :deep(.el-tabs) {
   background: rgba(0, 0, 0, 0.3) !important;
+}
+html.dark-mode .card-header > span:first-child {
+  color: #e0e0e0 !important;
 }
 html.dark-mode .mobile-menu-panel {
   background: rgba(20, 20, 45, 0.95) !important;

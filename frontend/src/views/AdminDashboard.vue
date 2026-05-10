@@ -2318,6 +2318,35 @@ export default {
   color: #909399;
 }
 
+.eval-item {
+  padding: 15px;
+  background: #f9f9f9;
+  border-radius: 8px;
+  margin-bottom: 15px;
+}
+
+.eval-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.eval-teacher {
+  font-weight: bold;
+  color: #333;
+}
+
+.eval-comment {
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.eval-time {
+  font-size: 12px;
+  color: #999;
+}
+
 .floating-refresh-btn {
   position: fixed;
   bottom: 30px;
@@ -2480,6 +2509,7 @@ export default {
   font-size: 12px;
   padding: 15px 20px;
   border-radius: 20px !important;
+  backdrop-filter: blur(16px) saturate(150%) !important;
   box-shadow:
     0 2px 8px rgba(0, 0, 0, 0.06),
     inset 0 1px 2px rgba(255, 255, 255, 0.3) !important;
@@ -3067,6 +3097,9 @@ html.dark-mode .course-info p {
 }
 html.dark-mode .course-desc {
   color: #999 !important;
+}
+html.dark-mode .course-desc strong {
+  color: #ccc !important;
 }
 html.dark-mode .skeleton-block {
   background: linear-gradient(90deg, rgba(60, 60, 90, 0.3) 25%, rgba(80, 80, 110, 0.5) 50%, rgba(60, 60, 90, 0.3) 75%) !important;
