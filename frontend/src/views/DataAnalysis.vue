@@ -32,6 +32,25 @@
             <v-chart :option="majorCourseOption" autoresize />
           </div>
         </el-card>
+        <el-card class="chart-card chart-card-wide">
+          <template #header><span>学分统计</span></template>
+          <div class="credit-summary">
+            <div class="credit-chart">
+              <v-chart :option="creditOption" autoresize style="height: 260px" />
+            </div>
+            <div class="credit-table">
+              <el-table :data="creditByType" size="small" stripe>
+                <el-table-column prop="type" label="课程性质" />
+                <el-table-column prop="course_count" label="门数" width="80" align="center" />
+                <el-table-column prop="total_credits" label="总学分" width="100" align="center">
+                  <template #default="{ row }">
+                    <span class="credit-value">{{ row.total_credits }}</span>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
+          </div>
+        </el-card>
       </div>
     </div>
   </div>
@@ -58,6 +77,7 @@ export default {
       teacherRatings: [],
       courseTypes: [],
       majorCourses: [],
+      creditSummary: null,
       loading: true
     }
   },
@@ -157,23 +177,49 @@ export default {
           label: { show: true, position: 'top' }
         }]
       }
+    },
+    creditByType() {
+      return this.creditSummary?.type_credits || []
+    },
+    creditOption() {
+      const majors = this.creditSummary?.major_credits || []
+      const colors = ['#0091FF', '#36CBCB', '#F7B731', '#FF6B6B', '#A55EEA']
+      return {
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: (params) => {
+          const p = params[0]
+          return `${p.name}<br/>总学分: ${p.value} 分`
+        }},
+        grid: { left: '3%', right: '4%', bottom: '8%', top: '3%', containLabel: true },
+        xAxis: { type: 'category', data: majors.map(m => m.major), axisLabel: { rotate: 25, fontSize: 11 } },
+        yAxis: { type: 'value', name: '学分' },
+        series: [{
+          type: 'bar',
+          data: majors.map((m, i) => ({
+            value: m.total_credits,
+            itemStyle: { color: colors[i % colors.length] }
+          })),
+          barWidth: 28,
+          label: { show: true, position: 'top', formatter: (p) => `${p.value}分` }
+        }]
+      }
     }
   },
   created() {
-    this.$echarts = require('echarts')
     this.fetchData()
   },
   methods: {
     async fetchData() {
       try {
-        const [ratings, types, majors] = await Promise.all([
+        const [ratings, types, majors, credits] = await Promise.all([
           request.get('/stats/teacher-ratings'),
           request.get('/stats/course-types'),
-          request.get('/stats/major-courses')
+          request.get('/stats/major-courses'),
+          request.get('/stats/credit-summary')
         ])
         this.teacherRatings = ratings
         this.courseTypes = types
         this.majorCourses = majors
+        this.creditSummary = credits
       } catch (e) {
         ElMessage.error('获取数据失败')
       } finally {
@@ -284,5 +330,36 @@ export default {
 }
 .chart-inner {
   width: 100%;
+}
+.chart-card-wide {
+  grid-column: span 2;
+}
+.credit-summary {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+.credit-chart {
+  flex: 1;
+  min-width: 0;
+}
+.credit-table {
+  width: 320px;
+  flex-shrink: 0;
+}
+.credit-value {
+  font-weight: 600;
+  color: #0091FF;
+}
+@media (max-width: 900px) {
+  .credit-summary {
+    flex-direction: column;
+  }
+  .credit-table {
+    width: 100%;
+  }
+  .chart-card-wide {
+    grid-column: span 1;
+  }
 }
 </style>

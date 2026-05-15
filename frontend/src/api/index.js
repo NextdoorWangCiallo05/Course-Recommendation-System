@@ -6,7 +6,7 @@ const cache = new Map()
 const CACHE_EXPIRY = 5 * 60 * 1000 // 5分钟
 
 const request = axios.create({
-  baseURL: '/api',
+  baseURL: process.env.VUE_APP_API_BASE_URL || '/api',
   timeout: 10000
 })
 
