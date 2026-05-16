@@ -765,11 +765,31 @@ html.dark-mode .option-card.selected { background: #1a2740; border-color: #4098F
 html.dark-mode .score-label { color: #aaa; }
 html.dark-mode .score-value { color: #e8e8e8; }
 html.dark-mode .score-divider { background: #333; }
+.multi-row-steps {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 4px;
+  padding: 8px 0;
+}
+.multi-row-steps .n-steps-item {
+  min-width: 120px;
+  flex: 0 0 auto;
+}
+.multi-row-steps .n-steps-item-title {
+  font-size: 13px;
+}
 @media (max-width: 768px) {
   .main { padding: 12px; }
   .option-grid { grid-template-columns: 1fr 1fr; }
   .option-grid.two-col { grid-template-columns: 1fr; }
   .scoreboard-content { gap: 4px; }
   .score-divider { display: none; }
+  .multi-row-steps .n-steps-item {
+    min-width: 100px;
+  }
+  .multi-row-steps .n-steps-item-title {
+    font-size: 12px;
+  }
 }
 </style>
