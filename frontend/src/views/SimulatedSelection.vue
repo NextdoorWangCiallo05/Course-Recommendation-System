@@ -188,16 +188,17 @@ export default defineComponent({
     subMajorOptions() { return [] },
     classTypeOptions() { return [] },
     stepTitle() {
-      return courseTypeMap[this.currentStep] || (this.currentStep === 11 ? '选课清单' : '')
+      if (this.currentStep === 11) return '选课清单'
+      return courseTypeMap[this.currentStep + 1] || ''
     },
     stepStatus() {
       return this.currentStep >= 11 ? 'finish' : 'process'
     },
     currentCourses() {
       const map = {
-        3: this.generalCourses, 4: this.englishCourses, 5: this.peCourses,
-        6: this.academicCourses, 7: this.majorRequiredCourses, 8: this.majorElectiveCourses,
-        9: this.practiceCourses, 10: this.generalElectiveCourses, 11: this.individualCourses
+        2: this.generalCourses, 3: this.englishCourses, 4: this.peCourses,
+        5: this.academicCourses, 6: this.majorRequiredCourses, 7: this.majorElectiveCourses,
+        8: this.practiceCourses, 9: this.generalElectiveCourses, 10: this.individualCourses
       }
       return map[this.currentStep] || []
     },
@@ -298,7 +299,8 @@ export default defineComponent({
     async nextStep() {
       if (this.currentStep < 11) {
         const next = this.currentStep + 1
-        if (next <= 11) await this.loadStepCourses(next)
+        const loadStep = next + 1
+        if (loadStep <= 11) await this.loadStepCourses(loadStep)
         this.currentStep = next
       }
     },
@@ -306,7 +308,7 @@ export default defineComponent({
       if (this.currentStep > 2) this.currentStep--
     },
     goToStep(index) {
-      if (index + 3 <= 11) this.currentStep = index + 3
+      if (index + 3 <= 11) this.currentStep = index + 2
     },
     onSelectionChange() {
       this.initSelectionData()
