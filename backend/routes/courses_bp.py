@@ -156,6 +156,10 @@ def get_courses():
         except:
             pass
 
+        teacher_ids = [t.id for t in course.teachers]
+        teacher_names = [t.name for t in course.teachers]
+        teacher_pinyins = [t.name_pinyin or '' for t in course.teachers]
+        
         result.append({
             'id': course.id,
             'name': course.name,
@@ -168,13 +172,19 @@ def get_courses():
             'assessment_method': course.assessment_method or '',
             'topic_category': course.topic_category or '',
             'teachers': [{'id': t.id, 'name': t.name, 'name_pinyin': t.name_pinyin or ''} for t in course.teachers],
+            'teacher_ids': teacher_ids,
+            'teacher_names': ','.join(teacher_names),
+            'teacher_pinyins': ','.join(teacher_pinyins),
             'majors': [{'id': m.id, 'name': m.name} for m in course.majors],
+            'major_names': ','.join([m.name for m in course.majors]),
             'major_course_types': major_course_types,
             'major_study_semesters': major_study_semesters,
             'course_types': course_course_types_map.get(course.id, []),
             'semesters': [s.semester for s in db.session.execute(course_semester.select().where(course_semester.c.course_id == course.id)).fetchall()],
             'avg_rating': round(avg_rating, 1) if avg_rating else None,
             'teacher_avg_ratings': teacher_avg_ratings,
+            'teacher_ratings': teacher_avg_ratings,
+            'teacher_evaluation_counts': {teacher_id: len(teacher_ratings[teacher_id]) for teacher_id in teacher_ratings},
             'evaluations': [{
                 'id': e.id,
                 'teacher_id': e.teacher_id,
