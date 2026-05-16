@@ -8,7 +8,7 @@
       </svg>
       <h3>页面加载异常</h3>
       <p>{{ errorMessage }}</p>
-      <el-button type="primary" @click="handleRetry">重新加载</el-button>
+      <button class="retry-btn" @click="handleRetry">重新加载</button>
     </div>
   </div>
   <slot v-else />
@@ -68,5 +68,20 @@ export default {
   color: #999;
   font-size: 14px;
   margin-bottom: 20px;
+}
+
+.retry-btn {
+  padding: 10px 24px;
+  font-size: 14px;
+  background: #2080F0;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.retry-btn:hover {
+  background: #4098FC;
 }
 </style>
