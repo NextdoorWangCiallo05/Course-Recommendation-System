@@ -1,5 +1,5 @@
 <template>
-  <n-config-provider :theme="naiveTheme" :theme-overrides="themeOverrides" :locale="zhCN" :date-locale="dateZhCN">
+  <n-config-provider :theme="naiveTheme" :theme-overrides="currentThemeOverrides" :locale="zhCN" :date-locale="dateZhCN">
     <n-message-provider>
       <n-dialog-provider>
         <n-notification-provider>
@@ -22,31 +22,38 @@
 </template>
 
 <script>
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { zhCN, dateZhCN, darkTheme } from 'naive-ui'
 import { themeOverrides, darkThemeOverrides } from './theme'
 
 export default {
   name: 'App',
   setup() {
-    const isDark = computed(() => document.documentElement.classList.contains('dark-mode'))
+    const isDark = ref(localStorage.getItem('darkMode') === 'true')
 
-    const loadTheme = () => {
-      const dark = localStorage.getItem('darkMode') === 'true'
-      if (dark) {
+    const applyDarkClass = () => {
+      if (isDark.value) {
         document.documentElement.classList.add('dark-mode')
       } else {
         document.documentElement.classList.remove('dark-mode')
       }
     }
 
-    loadTheme()
+    applyDarkClass()
+
+    window.__toggleDarkMode = (val) => {
+      isDark.value = val
+      applyDarkClass()
+    }
+
+    const naiveTheme = computed(() => isDark.value ? darkTheme : null)
+    const currentThemeOverrides = computed(() => isDark.value ? darkThemeOverrides : themeOverrides)
 
     return {
       zhCN,
       dateZhCN,
-      naiveTheme: computed(() => isDark.value ? darkTheme : null),
-      themeOverrides: computed(() => isDark.value ? darkThemeOverrides : themeOverrides)
+      naiveTheme,
+      currentThemeOverrides
     }
   },
   mounted() {

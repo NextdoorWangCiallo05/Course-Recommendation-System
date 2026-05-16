@@ -469,8 +469,8 @@ export default defineComponent({
       }
     },
     toggleDarkMode(val) {
-      if (val) { document.documentElement.classList.add('dark-mode'); localStorage.setItem('darkMode', 'true') }
-      else { document.documentElement.classList.remove('dark-mode'); localStorage.setItem('darkMode', 'false') }
+      window.__toggleDarkMode(val)
+      localStorage.setItem('darkMode', val ? 'true' : 'false')
     },
     toggleMobileMenu() { this.showMobileMenu = !this.showMobileMenu },
     openSimulatedSelection() { this.$router.push('/simulated-selection') },
