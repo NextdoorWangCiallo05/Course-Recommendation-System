@@ -4,13 +4,11 @@
       <n-dialog-provider>
         <n-notification-provider>
           <div id="app">
-            <error-boundary>
-              <router-view v-slot="{ Component }">
-                <transition name="fade" mode="out-in">
-                  <component :is="Component" />
-                </transition>
-              </router-view>
-            </error-boundary>
+            <router-view v-slot="{ Component }">
+              <transition name="fade" mode="out-in">
+                <component :is="Component" />
+              </transition>
+            </router-view>
             <div class="icp-footer">
               <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">
                 鲁ICP备2026021969号
@@ -26,12 +24,10 @@
 <script>
 import { computed } from 'vue'
 import { zhCN, dateZhCN } from 'naive-ui'
-import ErrorBoundary from './components/ErrorBoundary.vue'
 import { themeOverrides, darkThemeOverrides } from './theme'
 
 export default {
   name: 'App',
-  components: { ErrorBoundary },
   setup() {
     const isDark = computed(() => document.documentElement.classList.contains('dark-mode'))
 
