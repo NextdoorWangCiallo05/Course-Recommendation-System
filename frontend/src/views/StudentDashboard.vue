@@ -377,6 +377,7 @@ export default defineComponent({
   },
   async mounted() {
     await this.loadMajors()
+    await this.loadTeachers()
     await this.loadCourses()
     this.colleges = [...new Set(this.allCourses.map(c => c.college).filter(Boolean))]
   },
@@ -385,6 +386,11 @@ export default defineComponent({
       try {
         this.majors = await request.get('/majors')
       } catch { this.message.error('加载专业失败') }
+    },
+    async loadTeachers() {
+      try {
+        this.teachers = await request.get('/teachers')
+      } catch {}
     },
     async loadCourses() {
       this.isLoading = true
