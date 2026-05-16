@@ -5,52 +5,40 @@
         <img src="/images/logo.png" class="logo" alt="logo">
         <h2>选课推荐系统 - 数据分析</h2>
       </div>
-      <div class="user-info">
-        <span class="welcome-text">欢迎, {{ username }}</span>
-        <el-button type="primary" size="small" class="back-btn" @click="goBack">{{ backText }}</el-button>
+      <div class="header-right">
+        <n-text depth="3" class="welcome-text">欢迎, {{ username }}</n-text>
+        <n-button type="primary" size="small" @click="goBack">{{ backText }}</n-button>
       </div>
     </div>
-    <div class="main" :style="mainBgStyle">
+    <div class="main">
       <div class="charts-grid">
-        <el-card class="chart-card chart-card-tall">
-          <template #header><span>教师评分排行</span></template>
+        <n-card class="chart-card chart-card-tall" title="教师评分排行">
           <div class="chart-wrapper-scroll">
             <div class="chart-inner" :style="{ height: teacherChartHeight + 'px' }">
               <v-chart :option="teacherRatingOption" autoresize />
             </div>
           </div>
-        </el-card>
-        <el-card class="chart-card">
-          <template #header><span>课程性质分布</span></template>
+        </n-card>
+        <n-card class="chart-card" title="课程性质分布">
           <div class="chart-wrapper">
             <v-chart :option="courseTypeOption" autoresize />
           </div>
-        </el-card>
-        <el-card class="chart-card">
-          <template #header><span>各专业课程数量</span></template>
+        </n-card>
+        <n-card class="chart-card" title="各专业课程数量">
           <div class="chart-wrapper">
             <v-chart :option="majorCourseOption" autoresize />
           </div>
-        </el-card>
-        <el-card class="chart-card chart-card-wide">
-          <template #header><span>学分统计</span></template>
+        </n-card>
+        <n-card class="chart-card chart-card-wide" title="学分统计">
           <div class="credit-summary">
             <div class="credit-chart">
               <v-chart :option="creditOption" autoresize style="height: 260px" />
             </div>
             <div class="credit-table">
-              <el-table :data="creditByType" size="small" stripe>
-                <el-table-column prop="type" label="课程性质" />
-                <el-table-column prop="course_count" label="门数" width="80" align="center" />
-                <el-table-column prop="total_credits" label="总学分" width="100" align="center">
-                  <template #default="{ row }">
-                    <span class="credit-value">{{ row.total_credits }}</span>
-                  </template>
-                </el-table-column>
-              </el-table>
+              <n-data-table :columns="creditColumns" :data="creditByType" size="small" :bordered="false" :single-line="false" />
             </div>
           </div>
-        </el-card>
+        </n-card>
       </div>
     </div>
   </div>
@@ -62,14 +50,19 @@ import { CanvasRenderer } from 'echarts/renderers'
 import { BarChart, PieChart } from 'echarts/charts'
 import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components'
 import VChart from 'vue-echarts'
-import { ElMessage } from 'element-plus'
+import { defineComponent, h } from 'vue'
+import { useMessage } from 'naive-ui'
 import request from '@/api'
 
 use([CanvasRenderer, BarChart, PieChart, GridComponent, TooltipComponent, LegendComponent])
 
-export default {
+export default defineComponent({
   name: 'DataAnalysis',
   components: { VChart },
+  setup() {
+    const message = useMessage()
+    return { message }
+  },
   data() {
     return {
       username: localStorage.getItem('username') || '',
@@ -77,28 +70,33 @@ export default {
       teacherRatings: [],
       courseTypes: [],
       majorCourses: [],
-      creditSummary: null,
-      loading: true
+      creditSummary: null
     }
   },
   computed: {
     backText() {
       return this.role === 'student' ? '返回主页' : '返回管理面板'
     },
-    mainBgStyle() {
-      return {
-        backgroundImage: "url('/images/dashboard-bg.jpg')",
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-        backgroundAttachment: 'fixed'
-      }
-    },
     ratedTeachers() {
       return this.teacherRatings.filter(t => t.eval_count > 0).sort((a, b) => b.avg_rating - a.avg_rating)
     },
     teacherChartHeight() {
       return Math.max(350, this.ratedTeachers.length * 32 + 60)
+    },
+    creditByType() {
+      return this.creditSummary?.type_credits || []
+    },
+    creditColumns() {
+      return [
+        { title: '课程性质', key: 'type' },
+        { title: '门数', key: 'course_count', width: 80 },
+        {
+          title: '总学分',
+          key: 'total_credits',
+          width: 100,
+          render: (row) => h('span', { style: 'color:#2080F0;font-weight:600' }, row.total_credits)
+        }
+      ]
     },
     teacherRatingOption() {
       const data = this.ratedTeachers.map(t => ({
@@ -129,7 +127,7 @@ export default {
         yAxis: { type: 'category', data: this.ratedTeachers.map(t => t.name).reverse(), axisLabel: { fontSize: 11 } },
         series: [{
           type: 'bar',
-          data: data,
+          data,
           barWidth: 20,
           label: { show: true, position: 'right', formatter: (p) => `${p.value}分` },
           markLine: { data: [{ type: 'average', name: '平均' }], label: { formatter: '平均 {c}' } }
@@ -178,9 +176,6 @@ export default {
         }]
       }
     },
-    creditByType() {
-      return this.creditSummary?.type_credits || []
-    },
     creditOption() {
       const majors = this.creditSummary?.major_credits || []
       const colors = ['#0091FF', '#36CBCB', '#F7B731', '#FF6B6B', '#A55EEA']
@@ -221,20 +216,14 @@ export default {
         this.majorCourses = majors
         this.creditSummary = credits
       } catch (e) {
-        ElMessage.error('获取数据失败')
-      } finally {
-        this.loading = false
+        this.message.error('获取数据失败')
       }
     },
     goBack() {
-      if (this.role === 'student') {
-        this.$router.push('/student')
-      } else {
-        this.$router.push('/admin')
-      }
+      this.$router.push(this.role === 'student' ? '/student' : '/admin')
     }
   }
-}
+})
 </script>
 
 <style scoped>
@@ -248,7 +237,7 @@ export default {
   padding: 12px 24px;
   background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  border-bottom: 1px solid rgba(0,0,0,0.04);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -268,17 +257,13 @@ export default {
   font-weight: 600;
   color: #333;
 }
-.user-info {
+.header-right {
   display: flex;
   align-items: center;
   gap: 15px;
 }
 .welcome-text {
   font-size: 14px;
-  color: #666;
-}
-.back-btn {
-  border-radius: 20px !important;
 }
 .main {
   padding: 24px;
@@ -296,21 +281,8 @@ export default {
     grid-template-columns: 1fr;
   }
 }
-.chart-card {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 12px;
-}
 .chart-card-tall {
   grid-row: span 2;
-}
-.chart-card :deep(.el-card__header) {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-  padding: 14px 20px;
-  font-size: 15px;
-  font-weight: 600;
-  color: #333;
 }
 .chart-wrapper {
   height: 350px;
@@ -347,10 +319,6 @@ export default {
   width: 320px;
   flex-shrink: 0;
 }
-.credit-value {
-  font-weight: 600;
-  color: #0091FF;
-}
 @media (max-width: 900px) {
   .credit-summary {
     flex-direction: column;
@@ -361,5 +329,11 @@ export default {
   .chart-card-wide {
     grid-column: span 1;
   }
+}
+html.dark-mode .header {
+  background: rgba(25, 25, 45, 0.85);
+}
+html.dark-mode .header h2 {
+  color: #e8e8e8;
 }
 </style>

@@ -1,14 +1,13 @@
 <template>
   <div class="dashboard">
-    <el-header class="header">
+    <div class="header">
       <div class="header-left">
         <img src="/images/logo.png" class="logo" alt="logo">
         <h2>选课推荐系统</h2>
       </div>
-      <div class="user-info">
-        <span class="welcome-text">欢迎, {{ username }}</span>
-        <el-button class="sim-btn" type="primary" size="small" @click="openSimulatedSelection">模拟选课</el-button>
-        <el-dropdown trigger="click" @command="handleMenuCommand">
+      <div class="header-right">
+        <n-button type="primary" size="small" @click="openSimulatedSelection">模拟选课</n-button>
+        <n-dropdown trigger="click" :options="menuOptions" @select="handleMenuCommand">
           <div class="menu-btn">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
               <line x1="4" y1="6" x2="20" y2="6"></line>
@@ -16,349 +15,246 @@
               <line x1="4" y1="18" x2="20" y2="18"></line>
             </svg>
           </div>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item command="analysis">数据分析</el-dropdown-item>
-              <el-dropdown-item command="feedback">反馈</el-dropdown-item>
-              <el-dropdown-item command="userCenter">用户中心</el-dropdown-item>
-              <el-dropdown-item command="settings">设置</el-dropdown-item>
-              <el-dropdown-item divided command="logout">退出</el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
+        </n-dropdown>
       </div>
       <div class="mobile-menu-btn" @click="toggleMobileMenu">菜单</div>
-    </el-header>
-    <el-main class="main" :style="mainBgStyle">
-      <el-card>
-        <template #header>
-          <div class="card-header">
-            <el-tabs v-model="mainSearchMode" @tab-change="handleMainTabChange">
-              <el-tab-pane label="课程检索" name="course"></el-tab-pane>
-              <el-tab-pane label="教师检索（计算机学院）" name="cs_course"></el-tab-pane>
-            </el-tabs>
-          </div>
-        </template>
-        <div v-if="mainSearchMode === 'course'">
-          <el-form :inline="true" class="search-form">
-            <el-form-item label="搜索">
-              <el-input v-model="searchKeyword" placeholder="搜索课程名" clearable @input="debounceFilterCourses" style="width: 200px;" />
-            </el-form-item>
-            <el-form-item label="专业分类">
-              <el-select v-model="selectedMajor" placeholder="全部专业" clearable @change="onMajorChange" style="width: 200px;">
-                <el-option v-for="m in majors" :key="m.id" :label="m.name" :value="m.id" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="开课学院">
-              <el-select v-model="selectedCollege" placeholder="全部学院" clearable @change="loadCourses" style="width: 200px;">
-                <el-option v-for="college in colleges" :key="college" :label="college" :value="college" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="课程性质">
-              <el-select v-model="selectedCourseType" multiple placeholder="全部课程性质" clearable @change="loadCourses" style="width: 220px;">
-                <el-option v-for="ct in courseTypeOptions" :key="ct.value" :label="ct.label" :value="ct.value" />
-              </el-select>
-            </el-form-item>
-            <el-form-item v-if="selectedMajor" label="必修/选修">
-              <el-select v-model="selectedMajorCourseType" placeholder="全部" clearable @change="loadCourses" style="width: 150px;">
-                <el-option label="必修" value="必修" />
-                <el-option label="选修" value="选修" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="教师搜索">
-              <el-input v-model="teacherKeyword" placeholder="搜索教师名（支持拼音缩写）" clearable @input="filterCourses" style="width: 180px;" />
-            </el-form-item>
-          </el-form>
-          <div v-if="isMobile" class="mobile-filter-btn" @click="toggleFilterPanel">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="20" y2="12"/><line x1="12" y1="18" x2="20" y2="18"/></svg>
-            <span>筛选</span>
-          </div>
-          <div v-if="showFilterPanel" class="mobile-filter-panel">
-            <div class="mobile-filter-item">
-              <label>搜索课程</label>
-              <el-input v-model="searchKeyword" placeholder="搜索课程名" clearable @input="debounceFilterCourses" />
-            </div>
-            <div class="mobile-filter-item">
-              <label>专业分类</label>
-              <el-select v-model="selectedMajor" placeholder="全部专业" clearable @change="onMajorChange" style="width: 100%;">
-                <el-option v-for="m in majors" :key="m.id" :label="m.name" :value="m.id" />
-              </el-select>
-            </div>
-            <div class="mobile-filter-item">
-              <label>开课学院</label>
-              <el-select v-model="selectedCollege" placeholder="全部学院" clearable @change="loadCourses" style="width: 100%;">
-                <el-option v-for="college in colleges" :key="college" :label="college" :value="college" />
-              </el-select>
-            </div>
-            <div class="mobile-filter-item">
-              <label>课程性质</label>
-              <el-select v-model="selectedCourseType" multiple placeholder="全部课程性质" clearable @change="loadCourses" style="width: 100%;">
-                <el-option v-for="ct in courseTypeOptions" :key="ct.value" :label="ct.label" :value="ct.value" />
-              </el-select>
-            </div>
-            <div class="mobile-filter-item" v-if="selectedMajor">
-              <label>必修/选修</label>
-              <el-select v-model="selectedMajorCourseType" placeholder="全部" clearable @change="loadCourses" style="width: 100%;">
-                <el-option label="必修" value="必修" />
-                <el-option label="选修" value="选修" />
-              </el-select>
-            </div>
-            <div class="mobile-filter-item">
-              <label>教师搜索</label>
-              <el-input v-model="teacherKeyword" placeholder="搜索教师名（支持拼音缩写）" clearable @input="filterCourses" />
-            </div>
-          </div>
-          <div v-if="isLoading" class="loading-skeleton">
-            <el-row :gutter="20">
-              <el-col v-for="n in 8" :key="n" :xs="24" :sm="12" :md="8" :lg="6">
-                <skeleton-card :lines="5" />
-              </el-col>
-            </el-row>
-          </div>
-          <el-row v-if="!isLoading" :gutter="20">
-            <el-col v-for="course in paginatedCourses" :key="course.id" :xs="24" :sm="12" :md="8" :lg="6">
-              <el-card class="course-card" shadow="hover" @click="showDetail(course)">
-                <template #header>
-                  <div class="card-header">
-                    <span class="course-name">{{ course.name }}</span>
-                  </div>
-                  <div class="course-tags">
-                    <el-tag type="info" size="small">{{ course.major_names }}</el-tag>
-                  </div>
-                </template>
-                <div class="course-info">
-                  <p><strong>学分:</strong> {{ course.credit }}</p>
-                  <p v-if="course.college"><strong>开课学院:</strong> {{ course.college }}</p>
-                  <p><strong>考核方式:</strong> {{ course.assessment_method || '闭卷笔试' }}</p>
-                  <p v-if="course.topic_category"><strong>主题类别:</strong> {{ course.topic_category }}</p>
-                  <p><strong>教师:</strong> {{ course.teacher_names }}</p>
-                  <p><strong>课程性质:</strong> {{ course.course_types ? course.course_types.join('、') : (course.course_type || '') }}</p>
-                  <p><strong>开课学期:</strong> {{ course.semesters ? course.semesters.join('、') : '' }}</p>
-                  <p v-if="selectedMajor && course.major_study_semesters && course.major_study_semesters[selectedMajor] && course.major_study_semesters[selectedMajor].length > 0">
-                    <strong>建议修读学期:</strong> {{ course.major_study_semesters[selectedMajor].join('、') }}
-                  </p>
-                  <p v-if="selectedMajor && course.major_course_types && course.major_course_types[selectedMajor]">
-                    <strong>对本专业:</strong> {{ course.major_course_types[selectedMajor] }}
-                  </p>
-                  <div v-if="course.teacher_ratings && Object.keys(course.teacher_ratings).length > 0">
-                    <div v-for="(rating, teacherId) in course.teacher_ratings" :key="teacherId" style="margin-left: 20px;">
-                      <span>{{ getTeacherName(teacherId) }}: </span>
-                      <el-rate :model-value="rating" disabled show-score text-color="#FF8D28" style="width: 120px;" />
-                      <span style="margin-left: 30px; color: #909399; font-size: 12px;">({{ course.teacher_evaluation_counts?.[teacherId] || 0 }}人评价)</span>
-                    </div>
-                  </div>
-                  <p v-else><strong>评分:</strong> 暂无评价</p>
-                  <p class="course-desc" :title="course.description">
-                    <strong>概述:</strong> {{ course.description || '暂无介绍' }}
-                  </p>
-                </div>
-                <div class="card-actions">
-                  <el-button type="primary" size="small" @click.stop="showDetail(course)">查看详情</el-button>
-                </div>
-              </el-card>
-            </el-col>
-          </el-row>
-          <el-empty v-if="courses.length === 0" description="暂无课程" />
-          <el-pagination
-            v-if="courses.length > pageSize"
-            v-model:current-page="currentPage"
-            :page-size="pageSize"
-            :total="courses.length"
-            layout="prev, pager, next, jumper"
-            class="modern-pagination"
-            @update:current-page="handlePageChange"
-          />
-        </div>
-        <div v-if="mainSearchMode === 'cs_course'">
-          <el-form :inline="true" class="search-form">
-            <el-form-item label="搜索教师">
-              <el-input v-model="csTeacherKeyword" placeholder="搜索教师名（支持拼音缩写）" clearable @input="filterCsTeachers" style="width: 200px;" />
-            </el-form-item>
-            <el-form-item label="课程性质">
-              <el-select v-model="csCourseTypeFilter" multiple placeholder="全部课程性质" clearable style="width: 200px;">
-                <el-option v-for="ct in courseTypeOptions" :key="ct.value" :label="ct.label" :value="ct.value" />
-              </el-select>
-            </el-form-item>
-          </el-form>
-          <div class="mobile-cs-search-box">
-            <el-input v-model="csTeacherKeyword" placeholder="搜索教师名（支持拼音缩写）" clearable @input="filterCsTeachers" />
-          </div>
-          <!-- 按老师检索：显示老师卡片 -->
-          <el-row :gutter="20" style="margin-top: 15px;">
-            <el-col v-for="teacher in paginatedCsTeachers" :key="teacher.id" :xs="24" :sm="12" :md="8" :lg="6">
-              <el-card class="course-card teacher-card" shadow="hover">
-                <template #header>
-                  <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-                    <span class="course-name teacher-name">👨‍🏫 {{ teacher.name }}</span>
-                    <el-button type="primary" size="small" @click.stop="openTeacherEvaluate(teacher)">评价老师</el-button>
-                  </div>
-                </template>
-                <div class="course-info">
-                  <p style="font-weight: bold; margin-bottom: 10px;">📚 授课列表：</p>
-                  <div class="teacher-courses-list">
-                    <div v-for="course in getTeacherCourses(teacher.id)" :key="course.id" class="teacher-course-item" @click="showDetail(course)">
-                      <div style="width: 100%;">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                          <span class="course-name-small">{{ course.name }}</span>
-                          <el-tag size="small" type="info">{{ course.credit }}学分</el-tag>
-                        </div>
-                        <div v-if="getTeacherCourseRating(teacher.id, course.id)" style="margin-top: 5px; font-size: 12px; color: #909399;">
-                          <el-rate :model-value="getTeacherCourseRating(teacher.id, course.id).avg" disabled show-score text-color="#FF8D28" style="--el-rate-font-size: 14px;" />
-                          ({{ getTeacherCourseRating(teacher.id, course.id).count }}人)
-                        </div>
-                        <div v-else style="margin-top: 5px; font-size: 12px; color: #c0c4cc;">暂无评价</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </el-card>
-            </el-col>
-          </el-row>
-          <el-empty v-if="filteredCsTeachers.length === 0" description="暂无数据" />
-          <el-pagination
-            v-if="filteredCsTeachers.length > csPageSize"
-            v-model:current-page="csCurrentPage"
-            :page-size="csPageSize"
-            :total="filteredCsTeachers.length"
-            layout="prev, pager, next, jumper"
-            class="modern-pagination"
-          />
-        </div>
-      </el-card>
-    </el-main>
-
-    <div v-if="showMobileMenu" class="mobile-menu-overlay" @click="showMobileMenu = false"></div>
-    <div v-if="showMobileMenu" class="mobile-menu-panel">
-      <div class="mobile-menu-header">菜单</div>
-      <div class="mobile-menu-item" @click="handleMenuCommand('simulated'); showMobileMenu = false">模拟选课</div>
-      <div class="mobile-menu-item" @click="handleMenuCommand('analysis'); showMobileMenu = false">数据分析</div>
-      <div class="mobile-menu-item" @click="handleMenuCommand('feedback'); showMobileMenu = false">反馈</div>
-      <div class="mobile-menu-item" @click="handleMenuCommand('userCenter'); showMobileMenu = false">用户中心</div>
-      <div class="mobile-menu-item" @click="handleMenuCommand('settings'); showMobileMenu = false">设置</div>
-      <div class="mobile-menu-item logout" @click="handleMenuCommand('logout'); showMobileMenu = false">退出</div>
     </div>
 
-    <el-dialog v-model="showDetailDialog" :title="selectedCourse?.name" width="620px">
-      <div v-if="selectedCourse" class="detail-content">
-        <el-descriptions :column="1" border>
-          <el-descriptions-item label="课程名">{{ selectedCourse.name }}</el-descriptions-item>
-          <el-descriptions-item label="学分">{{ selectedCourse.credit }}</el-descriptions-item>
-          <el-descriptions-item label="开课学院" v-if="selectedCourse.college">{{ selectedCourse.college }}</el-descriptions-item>
-          <el-descriptions-item label="考核方式">{{ selectedCourse.assessment_method || '闭卷笔试' }}</el-descriptions-item>
-          <el-descriptions-item label="专业">
-            <div>
-              <span>{{ selectedCourse.major_names }}</span>
-              <el-tag v-if="selectedMajor && selectedCourse.major_course_types && selectedCourse.major_course_types[selectedMajor]"
-                size="small" :type="selectedCourse.major_course_types[selectedMajor] === '必修' ? 'danger' : 'success'" style="margin-left: 10px;">
-                {{ selectedCourse.major_course_types[selectedMajor] }}
-              </el-tag>
+    <div class="main">
+      <n-card>
+        <template #header>
+          <div class="card-header-tabs">
+            <n-tabs v-model:value="mainSearchMode" @update:value="handleMainTabChange" type="segment">
+              <n-tab-pane name="course" tab="课程检索" />
+              <n-tab-pane name="cs_course" tab="教师检索（计算机学院）" />
+            </n-tabs>
+          </div>
+        </template>
+
+        <!-- 课程检索 -->
+        <div v-if="mainSearchMode === 'course'">
+          <div class="search-form">
+            <n-form :inline="true" :model="{}">
+              <n-form-item>
+                <n-input v-model:value="searchKeyword" placeholder="搜索课程名" clearable @update:value="debounceFilterCourses" style="width: 200px;" />
+              </n-form-item>
+              <n-form-item>
+                <n-select v-model:value="selectedMajor" placeholder="全部专业" clearable :options="majorOptions" @update:value="onMajorChange" style="width: 200px;" />
+              </n-form-item>
+              <n-form-item>
+                <n-select v-model:value="selectedCollege" placeholder="全部学院" clearable :options="collegeOptions" @update:value="loadCourses" style="width: 200px;" />
+              </n-form-item>
+              <n-form-item>
+                <n-select v-model:value="selectedCourseType" multiple placeholder="全部课程性质" clearable :options="courseTypeOptions" @update:value="loadCourses" style="width: 220px;" />
+              </n-form-item>
+              <n-form-item v-if="selectedMajor">
+                <n-select v-model:value="selectedMajorCourseType" placeholder="对本专业分类" clearable :options="majorCourseTypeOptions" @update:value="filterCourses" style="width: 180px;" />
+              </n-form-item>
+              <n-form-item>
+                <n-input v-model:value="teacherKeyword" placeholder="搜索教师名（支持拼音缩写）" clearable @update:value="filterCourses" style="width: 200px;" />
+              </n-form-item>
+            </n-form>
+          </div>
+
+          <div v-if="isLoading" class="loading-skeleton">
+            <div class="skeleton-grid">
+              <skeleton-card v-for="n in 8" :key="n" :lines="5" />
             </div>
-          </el-descriptions-item>
-          <el-descriptions-item label="授课教师">{{ selectedCourse.teacher_names }}</el-descriptions-item>
-          <el-descriptions-item label="课程性质">{{ selectedCourse.course_types ? selectedCourse.course_types.join('、') : (selectedCourse.course_type || '') }}</el-descriptions-item>
-          <el-descriptions-item label="开课学期">{{ selectedCourse.semesters ? selectedCourse.semesters.join('、') : '' }}</el-descriptions-item>
-          <el-descriptions-item v-if="selectedMajor && selectedCourse.major_study_semesters && selectedCourse.major_study_semesters[selectedMajor] && selectedCourse.major_study_semesters[selectedMajor].length > 0" label="建议修读学期">
+          </div>
+
+          <div v-if="!isLoading" class="course-grid">
+            <n-card v-for="course in paginatedCourses" :key="course.id" class="course-card" :hoverable="true" @click="showDetail(course)">
+              <template #header>
+                <div class="course-card-header">
+                  <span class="course-name">{{ course.name }}</span>
+                  <n-tag v-if="course.major_names" size="small" type="info">{{ course.major_names }}</n-tag>
+                </div>
+              </template>
+              <div class="course-info">
+                <p><n-text depth="2">学分:</n-text> {{ course.credit }}</p>
+                <p v-if="course.college"><n-text depth="2">开课学院:</n-text> {{ course.college }}</p>
+                <p><n-text depth="2">考核方式:</n-text> {{ course.assessment_method || '闭卷笔试' }}</p>
+                <p v-if="course.topic_category"><n-text depth="2">主题类别:</n-text> {{ course.topic_category }}</p>
+                <p><n-text depth="2">教师:</n-text> {{ course.teacher_names }}</p>
+                <p><n-text depth="2">课程性质:</n-text> {{ course.course_types ? course.course_types.join('、') : (course.course_type || '') }}</p>
+                <p><n-text depth="2">开课学期:</n-text> {{ course.semesters ? course.semesters.join('、') : '' }}</p>
+                <p v-if="selectedMajor && course.major_study_semesters && course.major_study_semesters[selectedMajor] && course.major_study_semesters[selectedMajor].length > 0">
+                  <n-text depth="2">建议修读学期:</n-text> {{ course.major_study_semesters[selectedMajor].join('、') }}
+                </p>
+                <p v-if="selectedMajor && course.major_course_types && course.major_course_types[selectedMajor]">
+                  <n-text depth="2">对本专业:</n-text> <n-tag :type="course.major_course_types[selectedMajor] === '必修' ? 'error' : 'success'" size="small">{{ course.major_course_types[selectedMajor] }}</n-tag>
+                </p>
+                <div v-if="course.teacher_ratings && Object.keys(course.teacher_ratings).length > 0">
+                  <div v-for="(rating, teacherId) in course.teacher_ratings" :key="teacherId" class="teacher-rating-item">
+                    <span>{{ getTeacherName(teacherId) }}: </span>
+                    <n-rate :value="rating" readonly :allow-half="true" size="small" />
+                    <span style="margin-left: 8px; color: #999; font-size: 12px;">({{ course.teacher_evaluation_counts?.[teacherId] || 0 }}人评价)</span>
+                  </div>
+                </div>
+                <p v-else><n-text depth="2">评分:</n-text> 暂无评价</p>
+                <p class="course-desc" :title="course.description">
+                  <n-text depth="2">概述:</n-text> {{ course.description || '暂无介绍' }}
+                </p>
+              </div>
+              <template #footer>
+                <n-button type="primary" size="small" @click.stop="showDetail(course)">查看详情</n-button>
+              </template>
+            </n-card>
+          </div>
+
+          <n-empty v-if="!isLoading && courses.length === 0" description="暂无课程" />
+
+          <div class="pagination-wrap">
+            <n-pagination v-if="courses.length > pageSize" v-model:page="currentPage" :page-count="totalPages" @update:page="handlePageChange" />
+          </div>
+        </div>
+
+        <!-- 教师检索 -->
+        <div v-if="mainSearchMode === 'cs_course'">
+          <div class="search-form">
+            <n-form :inline="true" :model="{}">
+              <n-form-item>
+                <n-input v-model:value="csTeacherKeyword" placeholder="搜索教师名（支持拼音缩写）" clearable @update:value="filterCsTeachers" style="width: 200px;" />
+              </n-form-item>
+              <n-form-item>
+                <n-select v-model:value="csCourseTypeFilter" multiple placeholder="全部课程性质" clearable :options="courseTypeOptions" style="width: 200px;" />
+              </n-form-item>
+            </n-form>
+          </div>
+
+          <div class="course-grid">
+            <n-card v-for="teacher in paginatedCsTeachers" :key="teacher.id" class="course-card teacher-card" :hoverable="true">
+              <template #header>
+                <div class="teacher-card-header">
+                  <span class="teacher-name">{{ teacher.name }}</span>
+                  <n-button type="primary" size="small" @click.stop="openTeacherEvaluate(teacher)">评价老师</n-button>
+                </div>
+              </template>
+              <p style="font-weight: 600; margin-bottom: 10px;">授课列表：</p>
+              <div class="teacher-courses-list">
+                <div v-for="course in getTeacherCourses(teacher.id)" :key="course.id" class="teacher-course-item" @click="showDetail(course)">
+                  <span class="course-name-small">{{ course.name }}</span>
+                </div>
+              </div>
+            </n-card>
+          </div>
+
+          <n-empty v-if="csFilteredTeachers.length === 0" description="暂无教师数据" />
+
+          <div class="pagination-wrap">
+            <n-pagination v-if="csTotalPages > 1" v-model:page="csCurrentPage" :page-count="csTotalPages" @update:page="() => {}" />
+          </div>
+        </div>
+      </n-card>
+    </div>
+
+    <!-- 课程详情 -->
+    <n-modal v-model:show="showDetailDialog" :title="selectedCourse?.name" preset="card" :style="{ maxWidth: '620px' }" :mask-closable="true">
+      <div v-if="selectedCourse">
+        <n-descriptions :column="1" bordered>
+          <n-descriptions-item label="课程名">{{ selectedCourse.name }}</n-descriptions-item>
+          <n-descriptions-item label="学分">{{ selectedCourse.credit }}</n-descriptions-item>
+          <n-descriptions-item v-if="selectedCourse.college" label="开课学院">{{ selectedCourse.college }}</n-descriptions-item>
+          <n-descriptions-item label="考核方式">{{ selectedCourse.assessment_method || '闭卷笔试' }}</n-descriptions-item>
+          <n-descriptions-item label="专业">
+            <span>{{ selectedCourse.major_names }}</span>
+            <n-tag v-if="selectedMajor && selectedCourse.major_course_types && selectedCourse.major_course_types[selectedMajor]"
+              size="small" :type="selectedCourse.major_course_types[selectedMajor] === '必修' ? 'error' : 'success'" style="margin-left: 10px;">
+              {{ selectedCourse.major_course_types[selectedMajor] }}
+            </n-tag>
+          </n-descriptions-item>
+          <n-descriptions-item label="授课教师">{{ selectedCourse.teacher_names }}</n-descriptions-item>
+          <n-descriptions-item label="课程性质">{{ selectedCourse.course_types ? selectedCourse.course_types.join('、') : (selectedCourse.course_type || '') }}</n-descriptions-item>
+          <n-descriptions-item label="开课学期">{{ selectedCourse.semesters ? selectedCourse.semesters.join('、') : '' }}</n-descriptions-item>
+          <n-descriptions-item v-if="selectedMajor && selectedCourse.major_study_semesters && selectedCourse.major_study_semesters[selectedMajor] && selectedCourse.major_study_semesters[selectedMajor].length > 0" label="建议修读学期">
             {{ selectedCourse.major_study_semesters[selectedMajor].join('、') }}
-          </el-descriptions-item>
-          <el-descriptions-item v-if="selectedCourse.teacher_ratings && Object.keys(selectedCourse.teacher_ratings).length > 0" label="教师评分" :span="1">
+          </n-descriptions-item>
+          <n-descriptions-item label="教师评分" v-if="selectedCourse.teacher_ratings && Object.keys(selectedCourse.teacher_ratings).length > 0">
             <div v-for="(rating, teacherId) in selectedCourse.teacher_ratings" :key="teacherId" style="margin-bottom: 5px;">
               <span>{{ getTeacherName(teacherId) }}: </span>
-              <el-rate :model-value="rating" disabled show-score text-color="#FF8D28" style="width: 120px;" />
-              <span style="margin-left: 30px; color: #909399; font-size: 12px;">({{ selectedCourse.teacher_evaluation_counts?.[teacherId] || 0 }}人评价)</span>
+              <n-rate :value="rating" readonly :allow-half="true" size="small" />
+              <span style="margin-left: 10px; color: #999; font-size: 12px;">({{ selectedCourse.teacher_evaluation_counts?.[teacherId] || 0 }}人评价)</span>
             </div>
-          </el-descriptions-item>
-          <el-descriptions-item v-else label="评分">暂无评价</el-descriptions-item>
-          <el-descriptions-item label="课程概述">{{ selectedCourse.description || '暂无介绍' }}</el-descriptions-item>
-        </el-descriptions>
+          </n-descriptions-item>
+          <n-descriptions-item v-else label="评分">暂无评价</n-descriptions-item>
+          <n-descriptions-item label="课程概述">{{ selectedCourse.description || '暂无介绍' }}</n-descriptions-item>
+        </n-descriptions>
+
         <h4 style="margin-top: 20px; margin-bottom: 10px;">教师评价</h4>
-        <div v-if="courseEvaluations.length > 0">
-          <div v-for="item in courseEvaluations" :key="item.id" class="eval-item">
-            <div class="eval-header">
-              <span class="eval-teacher">{{ item.teacher_name }}</span>
-              <el-rate v-model="item.rating" disabled style="width: 120px;" />
-              <el-button v-if="item.user_id === currentUserId" type="danger" size="small" @click="deleteEvaluation(item.id)">删除</el-button>
-            </div>
-            <p class="eval-comment">{{ item.comment }}</p>
-            <p class="eval-time">{{ item.created_at }}</p>
+        <div v-if="courseEvaluations.length === 0" style="color: #999; margin-bottom: 15px;">暂无评价，快来评价吧</div>
+        <div v-for="ev in courseEvaluations" :key="ev.id" class="evaluation-item">
+          <div class="eval-header">
+            <strong>{{ ev.teacher_name || getTeacherName(ev.teacher_id) }}</strong>
+            <n-rate :value="ev.rating" readonly :allow-half="true" size="small" />
+            <span style="color: #999; font-size: 12px;">{{ ev.created_at }}</span>
+            <n-button v-if="ev.user_id === currentUserId" type="error" size="tiny" @click="deleteEvaluation(ev.id)">删除</n-button>
           </div>
+          <p class="eval-comment">{{ ev.comment || '无评价内容' }}</p>
         </div>
-        <el-empty v-else description="暂无评价" :image-size="60" />
-        <div style="margin-top: 20px;">
-          <h4 style="margin-bottom: 10px;">添加评价</h4>
-          <el-form :model="evalForm" label-width="80px">
-            <el-form-item label="教师">
-              <el-select v-model="evalForm.teacher_id" placeholder="请选择教师" :disabled="!selectedCourse">
-                <el-option v-for="(teacher_id, index) in selectedCourse?.teacher_ids" :key="teacher_id" :label="selectedCourse.teacher_names.split(',')[index]" :value="teacher_id" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="星级">
-              <el-rate v-model="evalForm.rating" style="width: 200px;" />
-            </el-form-item>
-            <el-form-item label="评语">
-              <el-input v-model="evalForm.comment" type="textarea" />
-            </el-form-item>
-            <el-form-item>
-              <el-button type="primary" @click="addEvaluation" :disabled="!evalForm.teacher_id">提交评价</el-button>
-            </el-form-item>
-          </el-form>
-        </div>
+
+        <n-divider />
+        <h4 style="margin-bottom: 10px;">添加评价</h4>
+        <n-form :model="evalForm" label-placement="left" label-width="60px">
+          <n-form-item label="教师">
+            <n-select v-model:value="evalForm.teacher_id" placeholder="请选择教师" :options="teacherSelectOptions" />
+          </n-form-item>
+          <n-form-item label="评分">
+            <n-rate v-model:value="evalForm.rating" :allow-half="true" />
+          </n-form-item>
+          <n-form-item label="评价">
+            <n-input v-model:value="evalForm.comment" type="textarea" :rows="3" placeholder="写下你的评价..." />
+          </n-form-item>
+          <n-button type="primary" @click="addEvaluation">提交评价</n-button>
+        </n-form>
       </div>
-    </el-dialog>
+    </n-modal>
 
-    <el-dialog v-model="showTeacherEvalDialog" :title="'评价 ' + selectedTeacherForEval?.name" width="500px">
-      <el-form label-width="80px">
-        <el-form-item label="选择课程">
-          <el-select v-model="teacherEvalForm.course_id" placeholder="请选择要评价的课程" style="width: 100%;">
-            <el-option v-for="course in getTeacherCourses(selectedTeacherForEval?.id)" :key="course.id" :label="course.name" :value="course.id" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="星级评分">
-          <el-rate v-model="teacherEvalForm.rating" style="width: 200px;" />
-        </el-form-item>
-        <el-form-item label="评价内容">
-          <el-input v-model="teacherEvalForm.comment" type="textarea" :rows="4" placeholder="请输入您的评价..." />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="showTeacherEvalDialog = false">取消</el-button>
-        <el-button type="primary" @click="submitTeacherEval">提交评价</el-button>
-      </template>
-    </el-dialog>
+    <!-- 教师评价对话框 -->
+    <n-modal v-model:show="showTeacherEvalDialog" :title="'评价教师 - ' + (selectedTeacherForEval?.name || '')" preset="card" :style="{ maxWidth: '500px' }" :mask-closable="true">
+      <n-form :model="teacherEvalForm" label-placement="left" label-width="80px">
+        <n-form-item label="课程">
+          <n-select v-model:value="teacherEvalForm.course_id" placeholder="请选择课程" :options="teacherEvalCourseOptions" />
+        </n-form-item>
+        <n-form-item label="评分">
+          <n-rate v-model:value="teacherEvalForm.rating" :allow-half="true" />
+        </n-form-item>
+        <n-form-item label="评价">
+          <n-input v-model:value="teacherEvalForm.comment" type="textarea" :rows="4" placeholder="写下你的评价..." />
+        </n-form-item>
+        <n-button type="primary" @click="submitTeacherEval">提交</n-button>
+      </n-form>
+    </n-modal>
 
-    <el-dialog v-model="showSettingsDialog" title="设置" width="420px">
-      <div class="settings-content">
-        <div class="settings-item">
-          <div class="settings-item-left">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-            </svg>
-            <span>深色模式</span>
-          </div>
-          <el-switch v-model="isDarkMode" @change="toggleDarkMode" />
-        </div>
+    <!-- 设置 -->
+    <n-modal v-model:show="showSettingsDialog" title="设置" preset="card" :style="{ maxWidth: '400px' }" :mask-closable="true">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span>深色模式</span>
+        <n-switch v-model:value="isDarkMode" @update:value="toggleDarkMode" />
       </div>
-    </el-dialog>
+    </n-modal>
 
-    <el-dialog v-model="showFeedbackDialog" title="用户反馈" width="500px">
-      <el-card style="margin-bottom: 15px; max-height: 300px; overflow-y: auto;">
-        <template #header>
-          <span>我的反馈记录</span>
-        </template>
+    <!-- 反馈 -->
+    <n-modal v-model:show="showFeedbackDialog" title="用户反馈" preset="card" :style="{ maxWidth: '500px' }" :mask-closable="true">
+      <n-card size="small" style="margin-bottom: 15px; max-height: 300px; overflow-y: auto;">
+        <template #header><span>我的反馈记录</span></template>
         <div v-for="fb in myFeedbacks" :key="fb.id" class="feedback-item">
           <p class="feedback-content">{{ fb.content }}</p>
           <div class="feedback-footer">
-            <span class="feedback-time">{{ fb.created_at }}</span>
-            <el-button type="danger" size="small" @click="handleDeleteFeedback(fb)">删除</el-button>
+            <n-text depth="3" style="font-size: 12px;">{{ fb.created_at }}</n-text>
+            <n-button type="error" size="tiny" @click="handleDeleteFeedback(fb)">删除</n-button>
           </div>
         </div>
-        <el-empty v-if="myFeedbacks.length === 0" description="暂无反馈记录" />
-      </el-card>
-      <el-input v-model="feedbackContent" type="textarea" :rows="4" placeholder="请输入您的反馈内容..." />
+        <n-empty v-if="myFeedbacks.length === 0" description="暂无反馈记录" />
+      </n-card>
+      <n-input v-model:value="feedbackContent" type="textarea" :rows="4" placeholder="请输入您的反馈内容..." />
       <template #footer>
-        <el-button @click="showFeedbackDialog = false">取消</el-button>
-        <el-button type="primary" @click="submitFeedback">提交</el-button>
+        <n-space justify="end">
+          <n-button @click="showFeedbackDialog = false">取消</n-button>
+          <n-button type="primary" @click="submitFeedback">提交</n-button>
+        </n-space>
       </template>
-    </el-dialog>
+    </n-modal>
+
     <button class="refresh-btn" :class="{ 'is-spinning': isRefreshing }" @click="handleRefresh" :disabled="isRefreshing" aria-label="刷新">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="refresh-icon">
         <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
@@ -369,18 +265,24 @@
 </template>
 
 <script>
+import { defineComponent } from 'vue'
+import { useMessage, useDialog } from 'naive-ui'
 import request, { clearCache } from '../api'
 import { COURSE_TYPE_OPTIONS } from '../constants'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import SkeletonCard from '../components/SkeletonCard.vue'
 
-export default {
+export default defineComponent({
   components: { SkeletonCard },
+  setup() {
+    const message = useMessage()
+    const dialog = useDialog()
+    return { message, dialog }
+  },
   data() {
     return {
-      username: '',
-      currentUserId: null,
-      courseTypeOptions: COURSE_TYPE_OPTIONS,
+      username: localStorage.getItem('username') || '',
+      currentUserId: parseInt(localStorage.getItem('user_id')) || null,
+      courseTypeOptions: COURSE_TYPE_OPTIONS.map(t => ({ label: t.label, value: t.value })),
       isLoading: false,
       majors: [],
       teachers: [],
@@ -391,194 +293,136 @@ export default {
       colleges: [],
       selectedCourseType: [],
       selectedMajorCourseType: null,
-      selectedTeacher: null,
       teacherKeyword: '',
       searchKeyword: '',
       showDetailDialog: false,
       selectedCourse: null,
       courseEvaluations: [],
       evalForm: { teacher_id: null, rating: 5, comment: '' },
+      showSettingsDialog: false,
+      isDarkMode: localStorage.getItem('darkMode') === 'true',
       showFeedbackDialog: false,
       myFeedbacks: [],
       feedbackContent: '',
+      showMobileMenu: false,
       isRefreshing: false,
       mainSearchMode: 'course',
-      csSearchMode: 'course',
-      csCourses: [],
+      searchDebounceTimer: null,
+      csTeacherKeyword: '',
+      csFilteredTeachers: [],
       csAllCourses: [],
       csTeachers: [],
-      csCourseKeyword: '',
-      csTeacherKeyword: '',
-      csSelectedTeacher: null,
       csCourseTypeFilter: [],
-      csSortOrder: 'asc',
+      currentPage: 1,
+      pageSize: 20,
       showTeacherEvalDialog: false,
       selectedTeacherForEval: null,
       teacherEvalForm: { course_id: null, rating: 5, comment: '' },
-      currentPage: 1,
-      pageSize: 12,
       csCurrentPage: 1,
-      csPageSize: 8,
-      searchDebounceTimer: null,
-      csSearchDebounceTimer: null,
-      showMobileMenu: false,
-      showFilterPanel: false,
-      isMobile: window.innerWidth <= 768,
-      showSettingsDialog: false,
-      isDarkMode: localStorage.getItem('darkMode') === 'true'
+      csPageSize: 12
     }
   },
-  async mounted() {
-    this.username = localStorage.getItem('username')
-    this.currentUserId = parseInt(localStorage.getItem('user_id'))
-    window.addEventListener('resize', this.onWindowResize)
-    await this.loadMajors()
-    await this.loadTeachers()
-    await this.loadCourses()
-  },
-  beforeDestroy() {
-    window.removeEventListener('resize', this.onWindowResize)
-  },
   computed: {
-    mainBgStyle() {
-      if (this.isDarkMode) {
-        return {
-          backgroundColor: 'rgba(0, 0, 0, 0.55)',
-          backgroundImage: 'url(/images/dashboard-bg.jpg)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundAttachment: 'fixed'
-        }
-      }
-      return {
-        backgroundColor: 'rgba(255, 255, 255, 0.4)',
-        backgroundImage: 'url(/images/dashboard-bg.jpg)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundAttachment: 'fixed'
-      }
+    majorOptions() {
+      return this.majors.map(m => ({ label: m.name, value: m.id }))
     },
-    filteredCsTeachers() {
-      let teachers = this.csTeachers || []
-      if (this.csTeacherKeyword) {
-        const keyword = this.csTeacherKeyword.toLowerCase()
-        teachers = teachers.filter(t => {
-          const nameMatch = t.name.toLowerCase().includes(keyword)
-          const pinyinMatch = t.name_pinyin && t.name_pinyin.toLowerCase().includes(keyword)
-          return nameMatch || pinyinMatch
-        })
-      }
-      if (this.csCourseTypeFilter && this.csCourseTypeFilter.length > 0) {
-        const teacherIdsWithCourses = new Set()
-        this.csAllCourses.forEach(course => {
-          const types = course.course_types || (course.course_type ? [course.course_type] : [])
-          if (types.some(t => this.csCourseTypeFilter.includes(t))) {
-            if (course.teacher_ids && Array.isArray(course.teacher_ids)) {
-              course.teacher_ids.forEach(id => teacherIdsWithCourses.add(String(id)))
-            }
-          }
-        })
-        teachers = teachers.filter(t => teacherIdsWithCourses.has(t.id))
-      }
-      return teachers
+    collegeOptions() {
+      return this.colleges.map(c => ({ label: c, value: c }))
+    },
+    majorCourseTypeOptions() {
+      return [
+        { label: '全部', value: null },
+        { label: '必修', value: '必修' },
+        { label: '选修', value: '选修' }
+      ].filter(Boolean)
     },
     paginatedCourses() {
       const start = (this.currentPage - 1) * this.pageSize
       return this.courses.slice(start, start + this.pageSize)
     },
+    totalPages() {
+      return Math.ceil(this.courses.length / this.pageSize)
+    },
+    menuOptions() {
+      return [
+        { label: '数据分析', key: 'analysis' },
+        { label: '反馈', key: 'feedback' },
+        { label: '用户中心', key: 'userCenter' },
+        { label: '设置', key: 'settings' },
+        { type: 'divider', key: 'd1' },
+        { label: '退出', key: 'logout' }
+      ]
+    },
+    teacherSelectOptions() {
+      if (!this.selectedCourse) return []
+      return (this.selectedCourse.teacher_ids || []).map((id, index) => ({
+        label: (this.selectedCourse.teacher_names || '').split(',')[index] || `教师${id}`,
+        value: id
+      }))
+    },
+    teacherEvalCourseOptions() {
+      if (!this.selectedTeacherForEval) return []
+      return this.getTeacherCourses(this.selectedTeacherForEval.id).map(c => ({
+        label: c.name,
+        value: c.id
+      }))
+    },
     paginatedCsTeachers() {
       const start = (this.csCurrentPage - 1) * this.csPageSize
-      return this.filteredCsTeachers.slice(start, start + this.csPageSize)
+      return this.csFilteredTeachers.slice(start, start + this.csPageSize)
+    },
+    csTotalPages() {
+      return Math.ceil(this.csFilteredTeachers.length / this.csPageSize)
     }
   },
+  async mounted() {
+    await this.loadMajors()
+    await this.loadCourses()
+    this.colleges = [...new Set(this.allCourses.map(c => c.college).filter(Boolean))]
+  },
   methods: {
-    async handleRefresh() {
-      if (this.isRefreshing) return
-      this.isRefreshing = true
-      await this.loadMajors()
-      await this.loadTeachers()
-      await this.loadCourses()
-      setTimeout(() => {
-        this.isRefreshing = false
-        ElMessage.success('刷新成功')
-      }, 500)
-    },
     async loadMajors() {
-      this.majors = await request.get('/majors')
-    },
-    async loadTeachers() {
-      this.teachers = await request.get('/teachers')
-    },
-    onMajorChange() {
-      this.selectedMajorCourseType = null
-      this.currentPage = 1
-      this.loadCourses()
-    },
-    handlePageChange() {
-      window.scrollTo({ top: 0, behavior: 'smooth' })
+      try {
+        this.majors = await request.get('/majors')
+      } catch { this.message.error('加载专业失败') }
     },
     async loadCourses() {
       this.isLoading = true
       try {
         const params = {}
-        if (this.selectedMajor) {
-          params.major_id = this.selectedMajor
-        }
-        if (this.selectedCourseType && this.selectedCourseType.length > 0) {
-          params.course_type = this.selectedCourseType.join(',')
-        }
-        if (this.selectedMajor && this.selectedMajorCourseType) {
-          params.major_course_type = this.selectedMajorCourseType
-        }
+        if (this.selectedMajor) params.major_id = this.selectedMajor
+        if (this.selectedCourseType && this.selectedCourseType.length > 0) params.course_type = this.selectedCourseType.join(',')
         this.allCourses = await request.get('/courses', { params })
-        this.updateColleges()
         this.filterCourses()
-      } finally {
-        this.isLoading = false
-      }
-    },
-    updateColleges() {
-      const collegeSet = new Set()
-      if (this.allCourses) {
-        this.allCourses.forEach(course => {
-          if (course.college) {
-            collegeSet.add(course.college)
-          }
-        })
-      }
-      this.colleges = Array.from(collegeSet).sort()
+      } catch { this.message.error('加载课程失败') }
+      finally { this.isLoading = false }
     },
     filterCourses() {
-      let filtered = this.allCourses || []
-      if (this.selectedCollege) {
-        filtered = filtered.filter(c => c.college === this.selectedCollege)
-      }
+      let filtered = [...this.allCourses]
+      if (this.selectedMajor) filtered = filtered.filter(c => c.majors?.some(m => m.id === this.selectedMajor))
+      if (this.selectedCollege) filtered = filtered.filter(c => c.college === this.selectedCollege)
       if (this.searchKeyword) {
-        const keyword = this.searchKeyword.toLowerCase()
-        filtered = filtered.filter(c => c.name.toLowerCase().includes(keyword))
+        const kw = this.searchKeyword.toLowerCase()
+        filtered = filtered.filter(c => c.name.toLowerCase().includes(kw))
       }
       if (this.teacherKeyword) {
-        const keyword = this.teacherKeyword.toLowerCase()
+        const kw = this.teacherKeyword.toLowerCase()
         filtered = filtered.filter(c => {
           if (c.teacher_names) {
-            const nameMatch = c.teacher_names.toLowerCase().includes(keyword)
-            const pinyinMatch = c.teacher_pinyins && c.teacher_pinyins.toLowerCase().includes(keyword)
+            const nameMatch = c.teacher_names.toLowerCase().includes(kw)
+            const pinyinMatch = c.teacher_pinyins && c.teacher_pinyins.toLowerCase().includes(kw)
             return nameMatch || pinyinMatch
           }
           return false
         })
       }
-      if (this.selectedTeacher) {
-        filtered = filtered.filter(c => c.teacher_ids && c.teacher_ids.includes(this.selectedTeacher))
-      }
+      if (this.selectedTeacher) filtered = filtered.filter(c => c.teacher_ids && c.teacher_ids.includes(this.selectedTeacher))
       this.courses = filtered
+      this.currentPage = 1
     },
     debounceFilterCourses() {
       if (this.searchDebounceTimer) clearTimeout(this.searchDebounceTimer)
-      this.searchDebounceTimer = setTimeout(() => {
-        this.currentPage = 1
-        this.filterCourses()
-      }, 300)
+      this.searchDebounceTimer = setTimeout(() => { this.currentPage = 1; this.filterCourses() }, 300)
     },
     getTeacherName(teacherId) {
       const teacher = this.teachers.find(t => t.id === Number(teacherId))
@@ -588,144 +432,75 @@ export default {
       this.selectedCourse = course
       this.showDetailDialog = true
       this.courseEvaluations = await request.get('/evaluations', { params: { course_id: course.id } })
-      // 重置评价表单
       this.evalForm = { teacher_id: null, rating: 5, comment: '' }
     },
-    getMajorName(majorId) {
-      const major = this.majors.find(m => m.id === Number(majorId))
-      return major ? major.name : '未知专业'
-    },
     async addEvaluation() {
-      if (!this.evalForm.teacher_id || !this.selectedCourse) {
-        ElMessage.warning('请选择教师')
-        return
-      }
+      if (!this.evalForm.teacher_id || !this.selectedCourse) { this.message.warning('请选择教师'); return }
       try {
-        await request.post('/evaluations', {
-          course_id: this.selectedCourse.id,
-          teacher_id: this.evalForm.teacher_id,
-          rating: this.evalForm.rating,
-          comment: this.evalForm.comment
-        })
-        ElMessage.success('评价提交成功')
-        // 重新加载评价
+        await request.post('/evaluations', { course_id: this.selectedCourse.id, teacher_id: this.evalForm.teacher_id, rating: this.evalForm.rating, comment: this.evalForm.comment })
+        this.message.success('评价提交成功')
         this.courseEvaluations = await request.get('/evaluations', { params: { course_id: this.selectedCourse.id } })
-        // 重新加载课程列表以更新评分
         await this.loadCourses()
-        // 重置评价表单
         this.evalForm = { teacher_id: null, rating: 5, comment: '' }
-      } catch (error) {
-        ElMessage.error('评价提交失败')
-      }
+      } catch { this.message.error('评价提交失败') }
     },
     async deleteEvaluation(id) {
-      try {
-        await ElMessageBox.confirm('确定要删除这条评价吗？', '提示', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        })
-        await request.delete(`/evaluations/${id}`)
-        ElMessage.success('评价删除成功')
-        // 重新加载评价
-        this.courseEvaluations = await request.get('/evaluations', { params: { course_id: this.selectedCourse.id } })
-        // 重新加载课程列表以更新评分
-        await this.loadCourses()
-      } catch {
-      }
+      this.dialog.info({ title: '提示', content: '确定要删除这条评价吗？', positiveText: '确定', negativeText: '取消', onPositiveClick: async () => {
+        try {
+          await request.delete(`/evaluations/${id}`)
+          this.message.success('评价删除成功')
+          this.courseEvaluations = await request.get('/evaluations', { params: { course_id: this.selectedCourse.id } })
+          await this.loadCourses()
+        } catch { this.message.error('删除失败') }
+      }})
     },
     async handleLogout() {
-      try {
-        await ElMessageBox.confirm('你真的要退出吗？', '提示', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        })
-        localStorage.clear()
-        clearCache()
-        this.$router.push('/login')
-      } catch {
-      }
+      this.dialog.info({ title: '提示', content: '你真的要退出吗？', positiveText: '确定', negativeText: '取消', onPositiveClick: () => {
+        localStorage.clear(); clearCache(); this.$router.push('/login')
+      }})
     },
     handleMenuCommand(command) {
       switch (command) {
-        case 'simulated':
-          this.openSimulatedSelection()
-          break
-        case 'analysis':
-          this.$router.push('/data-analysis')
-          break
-        case 'feedback':
-          this.openFeedback()
-          break
-        case 'userCenter':
-          this.$router.push('/user-center')
-          break
-        case 'settings':
-          this.showSettingsDialog = true
-          break
-        case 'logout':
-          this.handleLogout()
-          break
+        case 'analysis': this.$router.push('/data-analysis'); break
+        case 'feedback': this.openFeedback(); break
+        case 'userCenter': this.$router.push('/user-center'); break
+        case 'settings': this.showSettingsDialog = true; break
+        case 'logout': this.handleLogout(); break
       }
     },
     toggleDarkMode(val) {
-      if (val) {
-        document.documentElement.classList.add('dark-mode')
-        localStorage.setItem('darkMode', 'true')
-      } else {
-        document.documentElement.classList.remove('dark-mode')
-        localStorage.setItem('darkMode', 'false')
-      }
+      if (val) { document.documentElement.classList.add('dark-mode'); localStorage.setItem('darkMode', 'true') }
+      else { document.documentElement.classList.remove('dark-mode'); localStorage.setItem('darkMode', 'false') }
     },
-    toggleMobileMenu() {
-      this.showMobileMenu = !this.showMobileMenu
-    },
-    onWindowResize() {
-      this.isMobile = window.innerWidth <= 768
-    },
-    toggleFilterPanel() {
-      this.showFilterPanel = !this.showFilterPanel
+    toggleMobileMenu() { this.showMobileMenu = !this.showMobileMenu },
+    openSimulatedSelection() { this.$router.push('/simulated-selection') },
+    onMajorChange(val) { this.selectedMajor = val; this.loadCourses() },
+    handlePageChange(page) { this.currentPage = page; window.scrollTo({ top: 0, behavior: 'smooth' }) },
+    async handleRefresh() {
+      this.isRefreshing = true
+      clearCache()
+      await this.loadCourses()
+      setTimeout(() => { this.isRefreshing = false }, 500)
     },
     async openFeedback() {
       this.showFeedbackDialog = true
       this.myFeedbacks = await request.get('/feedbacks')
     },
-    openSimulatedSelection() {
-      this.$router.push('/simulated-selection')
-    },
     async submitFeedback() {
-      if (!this.feedbackContent.trim()) {
-        ElMessage.warning('反馈内容不能为空')
-        return
-      }
+      if (!this.feedbackContent.trim()) { this.message.warning('反馈内容不能为空'); return }
       try {
         await request.post('/feedbacks', { content: this.feedbackContent })
-        ElMessage.success('反馈提交成功')
-        this.feedbackContent = ''
+        this.message.success('反馈提交成功'); this.feedbackContent = ''
         this.myFeedbacks = await request.get('/feedbacks')
-      } catch (error) {
-        ElMessage.error('提交失败: ' + (error.message || '未知错误'))
-      }
+      } catch (e) { this.message.error('提交失败: ' + (e.message || '未知错误')) }
     },
     async handleDeleteFeedback(fb) {
-      try {
-        await ElMessageBox.confirm('确定要删除这条反馈吗？', '提示', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        })
-        await request.delete(`/feedbacks/${fb.id}`)
-        ElMessage.success('删除成功')
-        this.myFeedbacks = await request.get('/feedbacks')
-      } catch {
-      }
+      this.dialog.info({ title: '提示', content: '确定要删除这条反馈吗？', positiveText: '确定', negativeText: '取消', onPositiveClick: async () => {
+        try { await request.delete(`/feedbacks/${fb.id}`); this.message.success('删除成功'); this.myFeedbacks = await request.get('/feedbacks') }
+        catch { this.message.error('删除失败') }
+      }})
     },
-    handleMainTabChange(tab) {
-      if (tab === 'cs_course') {
-        this.loadCsCourses()
-      }
-    },
+    handleMainTabChange(tab) { if (tab === 'cs_course') this.loadCsCourses() },
     async loadCsCourses() {
       const params = { sort: this.csSortOrder, sort_by: 'order_num' }
       this.csAllCourses = await request.get('/courses', { params })
@@ -735,96 +510,34 @@ export default {
     },
     getUniqueTeachers(courses) {
       const teacherMap = new Map()
-      if (courses) {
-        courses.forEach(course => {
-          if (course.teacher_ids && course.teacher_names) {
-            const ids = Array.isArray(course.teacher_ids) ? course.teacher_ids : (course.teacher_ids || '').split(',').map(id => id.trim())
-            const names = Array.isArray(course.teacher_names) ? course.teacher_names : (course.teacher_names || '').split(',')
-            const pinyins = course.teacher_pinyins ? (Array.isArray(course.teacher_pinyins) ? course.teacher_pinyins : (course.teacher_pinyins || '').split(',')) : []
-            ids.forEach((id, index) => {
-              const idStr = String(id)
-              if (!teacherMap.has(idStr)) {
-                teacherMap.set(idStr, { id: idStr, name: names[index] ? names[index].trim() : '', name_pinyin: pinyins[index] ? pinyins[index].trim() : '' })
-              }
-            })
-          }
-        })
-      }
-      return Array.from(teacherMap.values()).sort((a, b) => a.name.localeCompare(b.name, 'zh'))
-    },
-    filterCsCourses() {
-      let filtered = this.csAllCourses || []
-      if (this.csSearchMode === 'course') {
-        if (this.csCourseKeyword) {
-          const keyword = this.csCourseKeyword.toLowerCase()
-          filtered = filtered.filter(c => c.name.toLowerCase().includes(keyword))
-        }
-      } else if (this.csSearchMode === 'teacher') {
-        if (this.csSelectedTeacher) {
-          filtered = filtered.filter(c => {
-            if (!c.teacher_ids) return false
-            const teacherIds = Array.isArray(c.teacher_ids) ? c.teacher_ids.map(id => String(id)) : (c.teacher_ids || '').split(',').map(id => id.trim())
-            return teacherIds.includes(this.csSelectedTeacher)
+      courses.forEach(course => {
+        if (course.teacher_ids && course.teacher_names) {
+          const ids = Array.isArray(course.teacher_ids) ? course.teacher_ids : (course.teacher_ids || '').split(',').map(id => id.trim())
+          const names = Array.isArray(course.teacher_names) ? course.teacher_names : (course.teacher_names || '').split(',')
+          const pinyins = course.teacher_pinyins ? (Array.isArray(course.teacher_pinyins) ? course.teacher_pinyins : (course.teacher_pinyins || '').split(',')) : []
+          ids.forEach((id, index) => {
+            const idStr = String(id)
+            if (!teacherMap.has(idStr)) {
+              teacherMap.set(idStr, { id: idStr, name: names[index] ? names[index].trim() : '', name_pinyin: pinyins[index] ? pinyins[index].trim() : '' })
+            }
           })
         }
-      }
-      if (this.csCourseTypeFilter && this.csCourseTypeFilter.length > 0) {
-        filtered = filtered.filter(c => {
-          const types = c.course_types || (c.course_type ? [c.course_type] : [])
-          return types.some(t => this.csCourseTypeFilter.includes(t))
-        })
-      }
-      this.csCourses = filtered
+      })
+      return Array.from(teacherMap.values())
     },
-    getTeacherRating(teacherId) {
-      let total = 0
-      let count = 0
-      if (this.csAllCourses) {
-        this.csAllCourses.forEach(course => {
-          if (course.teacher_ratings && course.teacher_ratings[teacherId]) {
-            total += course.teacher_ratings[teacherId] * (course.teacher_evaluation_counts?.[teacherId] || 1)
-            count += course.teacher_evaluation_counts?.[teacherId] || 1
-          }
-        })
-      }
-      if (count === 0) return null
-      return { avg: Math.round(total / count * 10) / 10, count }
+    filterCsTeachers() {
+      const keyword = this.csTeacherKeyword.toLowerCase()
+      if (!keyword) { this.csFilteredTeachers = this.csTeachers; return }
+      this.csFilteredTeachers = this.csTeachers.filter(t => {
+        const nameMatch = t.name.toLowerCase().includes(keyword)
+        const pinyinMatch = t.name_pinyin && t.name_pinyin.toLowerCase().includes(keyword)
+        return nameMatch || pinyinMatch
+      })
+      this.csCurrentPage = 1
     },
-    getTeacherCourseRating(teacherId, courseId) {
-      if (this.csAllCourses) {
-        const course = this.csAllCourses.find(c => c.id === courseId)
-        if (course && course.teacher_ratings && course.teacher_ratings[teacherId]) {
-          return {
-            avg: course.teacher_ratings[teacherId],
-            count: course.teacher_evaluation_counts?.[teacherId] || 1
-          }
-        }
-      }
-      return null
-    },
-    openTeacherEvaluate(teacher) {
-      this.selectedTeacherForEval = teacher
-      this.teacherEvalForm = { course_id: null, rating: 5, comment: '' }
-      this.showTeacherEvalDialog = true
-    },
-    async submitTeacherEval() {
-      if (!this.teacherEvalForm.course_id) {
-        ElMessage.warning('请选择课程')
-        return
-      }
-      try {
-        await request.post('/evaluations', {
-          course_id: this.teacherEvalForm.course_id,
-          teacher_id: parseInt(this.selectedTeacherForEval.id),
-          rating: this.teacherEvalForm.rating,
-          comment: this.teacherEvalForm.comment
-        })
-        ElMessage.success('评价成功')
-        this.showTeacherEvalDialog = false
-        await this.loadCsCourses()
-      } catch (error) {
-        ElMessage.error('评价失败: ' + (error.message || '未知错误'))
-      }
+    filterCsCourses() {
+      this.csFilteredTeachers = this.csTeachers
+      this.filterCsTeachers()
     },
     getTeacherCourses(teacherId) {
       let courses = []
@@ -842,1098 +555,226 @@ export default {
         }
       }
       return courses
+    },
+    openTeacherEvaluate(teacher) {
+      this.selectedTeacherForEval = teacher
+      this.teacherEvalForm = { course_id: null, rating: 5, comment: '' }
+      this.showTeacherEvalDialog = true
+    },
+    async submitTeacherEval() {
+      if (!this.teacherEvalForm.course_id || !this.selectedTeacherForEval) { this.message.warning('请选择课程'); return }
+      try {
+        await request.post('/evaluations', {
+          course_id: this.teacherEvalForm.course_id,
+          teacher_id: this.selectedTeacherForEval.id,
+          rating: this.teacherEvalForm.rating,
+          comment: this.teacherEvalForm.comment
+        })
+        this.message.success('评价提交成功')
+        this.showTeacherEvalDialog = false
+      } catch { this.message.error('评价提交失败') }
     }
   }
-}
+})
 </script>
 
 <style scoped>
 .dashboard {
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
 }
-
 .header {
-  position: fixed;
-  top: 15px;
-  left: 30px;
-  right: 30px;
-  z-index: 1000;
-  background: rgba(255, 255, 255, 0.65);
-  backdrop-filter: blur(12px);
-  border-radius: 16px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 10px 24px;
+  justify-content: space-between;
+  padding: 12px 24px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
-
-.header h2 {
-  font-size: 18px;
-  color: #333;
-}
-
 .header-left {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
-
 .logo {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  object-fit: cover;
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.welcome-text {
-  font-size: 14px;
-  color: #666;
-}
-
-.sim-btn {
-  height: 36px !important;
-  padding: 0 20px !important;
-  border-radius: 20px !important;
-  font-size: 13px !important;
-  font-weight: 500 !important;
-  border: none !important;
-}
-
-.menu-btn {
   width: 36px;
   height: 36px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #0091FF 0%, #1E6EF4 100%);
-  color: #fff;
+  border-radius: 8px;
+}
+.header h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.menu-btn {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.2s;
+  color: #666;
 }
-
 .menu-btn:hover {
-  transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(0, 145, 255, 0.35);
+  background: rgba(0,0,0,0.04);
 }
-
-.menu-btn svg {
-  display: block;
-}
-
 .mobile-menu-btn {
   display: none;
 }
-
-.mobile-filter-btn {
-  display: none;
-}
-
-.mobile-cs-search-box {
-  display: none;
-}
-
 .main {
-  padding: 20px 30px;
-  flex: 1;
-  padding-top: 90px !important;
+  padding: 20px 24px;
 }
-
-.main > .el-card {
-  background: rgba(255, 255, 255, 0.6) !important;
-  border-radius: 16px !important;
-  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+.card-header-tabs {
+  display: flex;
+  justify-content: center;
 }
-
 .search-form {
-  background: rgba(255, 255, 255, 0.35) !important;
-  backdrop-filter: blur(10px);
-  border-radius: 14px !important;
-  padding: 16px 20px !important;
-  border: 1px solid rgba(255, 255, 255, 0.4) !important;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
-
-.card-header > span:first-child {
-  font-size: 16px !important;
-  font-weight: 600 !important;
-  color: #333 !important;
+.search-form :deep(.n-form-item) {
+  margin-bottom: 8px;
 }
-
+.course-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+.loading-skeleton .skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
 .course-card {
-  margin-bottom: 20px;
-  background: rgba(255, 255, 255, 0.6) !important;
-  border-radius: 16px !important;
-  border: 1px solid rgba(255, 255, 255, 0.5) !important;
-  animation: cardFadeIn 0.4s ease both;
+  cursor: pointer;
 }
-
-/* 骨架屏加载动画 */
-
-
-.course-card:nth-child(2) { animation-delay: 0.05s; }
-.course-card:nth-child(3) { animation-delay: 0.1s; }
-.course-card:nth-child(4) { animation-delay: 0.15s; }
-.course-card:nth-child(5) { animation-delay: 0.2s; }
-.course-card:nth-child(6) { animation-delay: 0.25s; }
-.course-card:nth-child(7) { animation-delay: 0.3s; }
-.course-card:nth-child(8) { animation-delay: 0.35s; }
-
-.course-card:hover {
-  background: rgba(255, 255, 255, 0.8) !important;
-  transform: translateY(-2px);
-}
-
-.teacher-card {
-  background: rgba(255, 255, 255, 0.6) !important;
-  border-radius: 16px !important;
-  border: 1px solid rgba(255, 255, 255, 0.5) !important;
-}
-
-.teacher-card:hover {
-  background: rgba(255, 255, 255, 0.8) !important;
-}
-
-.course-name {
-  font-weight: bold;
-  font-size: 16px;
-}
-
-.course-info p {
-  margin: 8px 0;
-  color: #666;
-}
-
-.course-desc {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-}
-
-.card-actions {
-  margin-top: 15px;
-  text-align: center;
-}
-
-.teacher-card .teacher-name {
-  font-size: 18px;
-}
-
-.teacher-courses-list {
-  margin-top: 10px;
-}
-
-.teacher-course-item {
+.course-card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 0;
-  border-bottom: 1px dashed #ebeef5;
-  cursor: pointer;
-  transition: background-color 0.2s;
+  gap: 8px;
 }
-
-.teacher-course-item:hover {
-  background-color: #f5f7fa;
-  padding-left: 8px;
-  padding-right: 8px;
-}
-
-.teacher-course-item:last-child {
-  border-bottom: none;
-}
-
-.course-name-small {
-  font-size: 13px;
-  color: #333;
-  flex: 1;
+.course-name {
+  font-weight: 600;
+  font-size: 15px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
-.detail-content {
-  padding: 10px 0;
+.course-info p {
+  margin-bottom: 6px;
+  font-size: 13px;
+  line-height: 1.6;
 }
-
-.eval-item {
-  padding: 15px;
-  background: #f9f9f9;
-  border-radius: 8px;
-  margin-bottom: 15px;
+.course-desc {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-
-.eval-header {
+.teacher-rating-item {
+  margin-bottom: 6px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.pagination-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
+}
+.teacher-card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
 }
-
-.eval-teacher {
-  font-weight: bold;
-  color: #333;
+.teacher-name {
+  font-weight: 600;
+  font-size: 16px;
 }
-
+.teacher-courses-list {
+  max-height: 200px;
+  overflow-y: auto;
+}
+.teacher-course-item {
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-bottom: 4px;
+}
+.teacher-course-item:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+.course-name-small {
+  font-size: 13px;
+}
+.evaluation-item {
+  padding: 10px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+.eval-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
 .eval-comment {
+  font-size: 13px;
   color: #666;
-  margin-bottom: 8px;
+  margin: 0;
 }
-
-.eval-time {
-  font-size: 12px;
-  color: #999;
-}
-
 .feedback-item {
   padding: 10px 0;
-  border-bottom: 1px solid #eee;
-}
-.feedback-item:last-child {
-  border-bottom: none;
-}
-.feedback-content {
-  margin: 0 0 8px 0;
-  color: #333;
+  border-bottom: 1px solid #f0f0f0;
 }
 .feedback-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-top: 6px;
 }
-.feedback-time {
-  font-size: 12px;
-  color: #999;
-}
-
-.floating-refresh-btn {
-  position: fixed;
-  bottom: 30px;
-  left: 30px;
-  width: 50px;
-  height: 50px;
-  font-size: 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 999;
-}
-
 .refresh-btn {
   position: fixed;
-  bottom: 30px;
-  right: 30px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #0091FF 0%, #1E6EF4 100%);
-  border: none;
-  cursor: pointer;
-  padding: 10px;
+  bottom: 24px;
+  right: 24px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
-  color: white;
-  box-shadow: 0 4px 16px rgba(0, 145, 255, 0.4);
-  transition: all 0.2s ease;
-  z-index: 999;
-}
-
-@media screen and (max-width: 768px) {
-  .refresh-btn {
-    bottom: 30px;
-    right: 30px;
-    left: auto;
-    width: 56px;
-    height: 56px;
-    padding: 0;
-    background: linear-gradient(135deg, #0091FF 0%, #1E6EF4 100%);
-    border: none;
-    box-shadow: 0 4px 16px rgba(0, 145, 255, 0.4);
-    color: white;
-  }
-  .refresh-btn:hover:not(:disabled) {
-    background: linear-gradient(135deg, #0091FF 0%, #1E6EF4 100%);
-    color: white;
-    opacity: 0.9;
-  }
-  .refresh-icon {
-    width: 28px;
-    height: 28px;
-  }
-}
-
-.refresh-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #0091FF 0%, #1E6EF4 100%);
-  color: white;
-  opacity: 0.9;
-}
-
-.refresh-btn:disabled {
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-
-.refresh-icon {
-  width: 32px;
-  height: 32px;
-}
-
-.is-spinning .refresh-icon {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes cardFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-:deep(.el-button) {
-  padding: 10px 24px !important;
-  font-size: 14px !important;
-  border-radius: 20px !important;
-  border: none !important;
-}
-
-:deep(.el-button--primary) {
-  background: linear-gradient(135deg, #0091FF 0%, #1E6EF4 100%) !important;
-}
-
-:deep(.el-button--primary:hover:not(:disabled)) {
-  background: rgba(0, 136, 255, 0.91) !important;
-}
-
-:deep(.el-button--success) {
-  background: rgba(52, 199, 89, 0.78) !important;
-}
-
-:deep(.el-button--success:hover:not(:disabled)) {
-  background: rgba(52, 199, 89, 0.91) !important;
-}
-
-:deep(.el-button--warning) {
-  background: rgba(255, 204, 0, 0.78) !important;
-}
-
-:deep(.el-button--warning:hover:not(:disabled)) {
-  background: rgba(255, 204, 0, 0.91) !important;
-}
-
-:deep(.el-button--danger) {
-  background: rgba(255, 56, 50, 0.78) !important;
-}
-
-:deep(.el-button--danger:hover:not(:disabled)) {
-  background: rgba(255, 56, 50, 0.91) !important;
-}
-
-:deep(.el-button--info) {
-  background: rgba(144, 147, 153, 0.5) !important;
-}
-
-:deep(.el-button--info:hover:not(:disabled)) {
-  background: rgba(144, 147, 153, 0.7) !important;
-}
-
-:deep(.el-button--default) {
-  background: rgba(255, 255, 255, 0.4) !important;
-}
-
-:deep(.el-button--default:hover:not(:disabled)) {
-  background: rgba(255, 255, 255, 0.6) !important;
-}
-
-.card-header {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-/* 苹果风格分段控制器 - 液态玻璃效果 */
-.card-header :deep(.el-tabs) {
-  display: inline-flex;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.04);
-  backdrop-filter: blur(20px) saturate(180%);
-  border-radius: 20px;
-  padding: 4px;
-  box-shadow:
-    inset 0 1px 2px rgba(0, 0, 0, 0.05),
-    0 1px 3px rgba(0, 0, 0, 0.03);
-}
-
-.card-header :deep(.el-tabs__header) {
-  margin: 0;
   border: none;
-  display: flex;
-  align-items: center;
-}
-
-.card-header :deep(.el-tabs__nav-wrap) {
-  margin: 0;
-  display: flex;
-  align-items: center;
-  border: none !important;
-  padding: 0 !important;
-}
-
-.card-header :deep(.el-tabs__nav-wrap::after) {
-  display: none !important;
-}
-
-.card-header :deep(.el-tabs__nav) {
-  border: none;
-  display: flex;
-  gap: 2px;
-  align-items: center;
-  border-bottom: none !important;
-}
-
-.card-header :deep(.el-tabs__item) {
-  border: none !important;
-  border-radius: 20px;
-  padding: 0 28px !important;
-  font-size: 14px;
-  color: #666;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-  display: inline-flex !important;
-  justify-content: center !important;
-  align-items: center !important;
-  text-align: center !important;
-  white-space: nowrap;
-  min-width: 80px;
-  height: 40px !important;
-  line-height: 1 !important;
-  width: auto !important;
-}
-
-.card-header :deep(.el-tabs__item:hover) {
-  color: #333;
-}
-
-.card-header :deep(.el-tabs__item.is-active) {
-  background: linear-gradient(135deg, #0091FF 0%, #1E6EF4 100%);
+  background: #2080F0;
   color: #fff;
-  font-weight: 500;
-  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.35);
-}
-
-.card-header :deep(.el-tabs__active-bar) {
-  display: none !important;
-}
-.user-info .el-button {
-  font-size: 12px;
-  padding: 15px 20px;
-  border-radius: 20px !important;
-  backdrop-filter: blur(16px) saturate(150%) !important;
-  box-shadow:
-    0 2px 8px rgba(0, 0, 0, 0.06),
-    inset 0 1px 2px rgba(255, 255, 255, 0.3) !important;
-  border: 1px solid rgba(255, 255, 255, 0.25) !important;
-}
-
-.course-actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 15px;
-}
-
-.course-actions :deep(.el-button) {
-  font-size: 14px;
-  padding: 15px 20px;
-  border-radius: 20px !important;
-  backdrop-filter: blur(16px) saturate(150%) !important;
-  box-shadow:
-    0 2px 8px rgba(0, 0, 0, 0.06),
-    inset 0 1px 2px rgba(255, 255, 255, 0.3) !important;
-  border: 1px solid rgba(255, 255, 255, 0.25) !important;
-}
-
-/* 手机端适配 (1080P竖屏) */
-@media screen and (max-width: 768px) {
-  .header {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 20px;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 1000;
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(20px);
-    border-radius: 0 0 20px 20px;
-    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
-  }
-  
-  .header-left {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  
-  .header-left .logo {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
-  }
-  
-  .header h2 {
-    font-size: 18px;
-    font-weight: 600;
-    margin: 0;
-    color: #333;
-  }
-  
-  .user-info {
-    display: none;
-  }
-  
-  .mobile-menu-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 48px;
-    height: 48px;
-    background: linear-gradient(135deg, #0091FF 0%, #1E6EF4 100%);
-    border-radius: 50%;
-    color: white;
-    font-size: 14px;
-    font-weight: 500;
-    box-shadow: 0 4px 12px rgba(0, 145, 255, 0.4);
-    cursor: pointer;
-    transition: all 0.3s ease;
-  }
-  
-  .mobile-menu-btn:active {
-    transform: scale(0.95);
-  }
-  
-  .main {
-    padding: 10px;
-    padding-top: 80px;
-  }
-  
-  :deep(.el-card) {
-    border-radius: 20px;
-    border: none;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-    background: rgba(255, 255, 255, 0.6);
-    backdrop-filter: blur(10px);
-  }
-  
-  :deep(.el-card__body) {
-    padding: 15px;
-  }
-  
-  .search-form {
-    display: none;
-  }
-  
-  .mobile-filter-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    width: 100%;
-    height: 56px;
-    background: rgba(255, 255, 255, 0.6);
-    backdrop-filter: blur(10px);
-    border-radius: 16px;
-    color: #666;
-    font-size: 16px;
-    font-weight: 500;
-    margin-bottom: 15px;
-    cursor: pointer;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    transition: all 0.3s ease;
-  }
-  
-  .mobile-filter-btn:active {
-    background: rgba(255, 255, 255, 0.8);
-  }
-  
-  .mobile-filter-panel {
-    background: rgba(255, 255, 255, 0.6);
-    backdrop-filter: blur(10px);
-    border-radius: 16px;
-    padding: 16px;
-    margin-bottom: 15px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  }
-  
-  .mobile-filter-item {
-    margin-bottom: 12px;
-  }
-  
-  .mobile-filter-item:last-child {
-    margin-bottom: 0;
-  }
-  
-  .mobile-filter-item label {
-    display: block;
-    font-size: 13px;
-    color: #999;
-    margin-bottom: 6px;
-    font-weight: 500;
-  }
-  
-  .mobile-filter-item :deep(.el-input),
-  .mobile-filter-item :deep(.el-select) {
-    width: 100% !important;
-  }
-  
-  .mobile-cs-search-box {
-    display: block;
-    margin-bottom: 15px;
-  }
-  
-  .mobile-cs-search-box :deep(.el-input__wrapper) {
-    background: rgba(255, 255, 255, 0.6);
-    backdrop-filter: blur(10px);
-    border-radius: 16px;
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  }
-  
-  .mobile-filter-item :deep(.el-input__wrapper) {
-    background: rgba(255, 255, 255, 0.8);
-    border-radius: 12px;
-    box-shadow: none;
-    border: 1px solid rgba(0, 0, 0, 0.06);
-  }
-  
-  .mobile-filter-item :deep(.el-select__wrapper) {
-    background: rgba(255, 255, 255, 0.8);
-    border-radius: 12px;
-    box-shadow: none;
-    border: 1px solid rgba(0, 0, 0, 0.06);
-  }
-  
-  .el-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
-  }
-  
-  .el-row > .el-col {
-    width: calc(50% - 7.5px);
-    padding: 0;
-  }
-  
-  .course-card {
-    padding: 15px;
-    border-radius: 16px;
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-  }
-  
-  .course-card .card-header {
-    margin-bottom: 10px;
-  }
-  
-  .course-card .course-name {
-    font-size: 15px;
-    font-weight: 600;
-    color: #333;
-    display: block;
-  }
-  
-  .course-tags {
-    margin-top: 8px;
-  }
-  
-  .course-tags :deep(.el-tag) {
-    font-size: 11px;
-    padding: 2px 8px;
-    border-radius: 10px;
-    background: rgba(0, 145, 255, 0.1);
-    border: none;
-    color: #0088ff;
-  }
-  
-  .course-info {
-    font-size: 13px;
-  }
-  
-  .course-info p {
-    margin: 6px 0;
-    color: #666;
-    display: -webkit-box;
-    -webkit-line-clamp: 1;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  
-  .card-actions {
-    margin-top: 12px;
-  }
-  
-  .card-actions :deep(.el-button) {
-    width: 100%;
-    padding: 10px !important;
-    font-size: 13px !important;
-    border-radius: 12px !important;
-  }
-  
-  .loading-skeleton {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
-  }
-  
-  .loading-skeleton .el-col {
-    width: calc(50% - 7.5px);
-  }
-  
-  .loading-skeleton .skeleton-card {
-    padding: 15px;
-    border-radius: 16px;
-  }
-  
-  .mobile-menu-overlay {
-    display: block;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 1001;
-  }
-  
-  .mobile-menu-panel {
-    display: block;
-    position: fixed;
-    top: 0;
-    right: 0;
-    width: 280px;
-    height: 100%;
-    background: white;
-    z-index: 1002;
-    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
-    animation: slideIn 0.3s ease;
-  }
-  
-  @keyframes slideIn {
-    from {
-      transform: translateX(100%);
-    }
-    to {
-      transform: translateX(0);
-    }
-  }
-  
-  .mobile-menu-header {
-    padding: 60px 20px 20px;
-    font-size: 18px;
-    font-weight: 600;
-    color: #333;
-    border-bottom: 1px solid #f0f0f0;
-  }
-  
-  .mobile-menu-item {
-    padding: 18px 20px;
-    font-size: 16px;
-    color: #333;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    border-bottom: 1px solid #f8f8f8;
-  }
-  
-  .mobile-menu-item:active {
-    background: #f5f7fa;
-  }
-  
-  .mobile-menu-item.logout {
-    color: #ff4d4f;
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    border-bottom: none;
-    border-top: 1px solid #f0f0f0;
-  }
-  
-  :deep(.el-pagination) {
-    justify-content: center;
-    padding: 15px 0;
-    overflow: visible;
-  }
-  
-  :deep(.el-pagination .el-pager),
-  :deep(.el-pagination .el-pagination__sizes) {
-    display: none !important;
-  }
-  
-  :deep(.el-pagination .btn-prev),
-  :deep(.el-pagination .btn-next) {
-    min-width: 44px;
-    height: 44px;
-    background: rgba(255, 255, 255, 0.8);
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    border-radius: 14px;
-    font-size: 18px;
-  }
-  
-  :deep(.el-pagination .el-pagination__jump) {
-    font-size: 15px;
-    color: #333;
-    margin-left: 8px;
-  }
-  
-  :deep(.el-pagination .el-pagination__jump .el-input__wrapper) {
-    background: rgba(255, 255, 255, 0.8);
-    border-radius: 12px;
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    box-shadow: none;
-  }
-  
-  :deep(.el-pagination .el-pagination__jump .el-input__inner) {
-    font-size: 15px;
-    font-weight: 600;
-    color: #0088ff;
-  }
-  
-  :deep(.el-empty) {
-    padding: 40px 0;
-  }
-}
-
-/* 下拉菜单美化（与管理端一致） */
-:deep(.el-dropdown-menu) {
-  background: rgba(255, 255, 255, 0.95) !important;
-  backdrop-filter: blur(20px) saturate(180%);
-  border-radius: 16px !important;
-  border: 1px solid rgba(255, 255, 255, 0.4) !important;
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.12),
-    inset 0 1px 2px rgba(255, 255, 255, 0.5) !important;
-  padding: 8px !important;
-  overflow: hidden;
-}
-
-:deep(.el-dropdown-menu__item) {
-  border-radius: 10px !important;
-  margin: 3px 4px !important;
-  padding: 8px 16px !important;
-  font-size: 14px !important;
-  transition: all 0.25s ease !important;
-}
-
-:deep(.el-dropdown-menu__item:hover) {
-  background: linear-gradient(135deg, rgba(0, 145, 255, 0.12), rgba(30, 110, 244, 0.12)) !important;
-  color: #0091FF !important;
-}
-
-:deep(.el-dropdown-menu__item.is-divided) {
-  border-top: 1px solid rgba(0, 0, 0, 0.06) !important;
-  margin-top: 6px !important;
-  padding-top: 10px !important;
-}
-
-html.dark-mode :deep(.el-dropdown-menu) {
-  background: rgba(25, 25, 50, 0.95) !important;
-  border-color: rgba(255, 255, 255, 0.1) !important;
-}
-
-html.dark-mode :deep(.el-dropdown-menu__item) {
-  color: #ccc !important;
-}
-
-html.dark-mode :deep(.el-dropdown-menu__item:hover) {
-  background: rgba(0, 136, 255, 0.15) !important;
-  color: #66b5ff !important;
-}
-
-html.dark-mode :deep(.el-dropdown-menu__item.is-divided) {
-  border-top-color: rgba(255, 255, 255, 0.08) !important;
-}
-
-.settings-content {
-  padding: 10px 0;
-}
-.settings-item {
+  cursor: pointer;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 16px 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(32, 128, 240, 0.3);
+  transition: all 0.2s;
+  z-index: 1000;
 }
-.settings-item:last-child {
-  border-bottom: none;
-}
-.settings-item-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 15px;
-  color: #333;
-  font-weight: 500;
-}
-.settings-item-left svg {
-  color: #666;
-}
-/* ========== 深色模式覆盖（scoped） ========== */
-html.dark-mode .header {
-  background: rgba(20, 20, 45, 0.85) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-}
-html.dark-mode .header h2 {
-  color: #e0e0e0 !important;
-}
-html.dark-mode .welcome-text {
-  color: #999 !important;
-}
-html.dark-mode .main .el-card {
-  background: rgba(30, 30, 55, 0.75) !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
-}
-html.dark-mode .search-form {
-  background: rgba(20, 20, 45, 0.5) !important;
-  border-color: rgba(255, 255, 255, 0.06) !important;
-}
-html.dark-mode .course-card {
-  background: rgba(30, 30, 55, 0.75) !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
-}
-html.dark-mode .course-card .card-header .course-name {
-  color: #e0e0e0 !important;
-}
-html.dark-mode .course-info p {
-  color: #ccc !important;
-}
-html.dark-mode .course-desc {
-  color: #999 !important;
-}
-html.dark-mode .course-desc strong {
-  color: #ccc !important;
-}
+.refresh-btn:hover { background: #4098FC; }
+.refresh-btn.is-spinning .refresh-icon { animation: spin 0.6s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.refresh-icon { width: 20px; height: 20px; }
+html.dark-mode .header { background: rgba(25, 25, 45, 0.85); }
+html.dark-mode .header h2 { color: #e8e8e8; }
+html.dark-mode .teacher-course-item:hover { background: rgba(255,255,255,0.06); }
+html.dark-mode .evaluation-item { border-bottom-color: #333; }
+html.dark-mode .feedback-item { border-bottom-color: #333; }
 
-html.dark-mode .teacher-card {
-  background: rgba(30, 30, 55, 0.75) !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
-}
-html.dark-mode .teacher-card .teacher-name {
-  color: #e0e0e0 !important;
-}
-html.dark-mode .teacher-course-item {
-  background: rgba(255, 255, 255, 0.05) !important;
-  border-color: rgba(255, 255, 255, 0.06) !important;
-}
-html.dark-mode .teacher-course-item:hover {
-  background: rgba(0, 136, 255, 0.1) !important;
-}
-html.dark-mode .teacher-course-item .course-name-small {
-  color: #e0e0e0 !important;
-}
-html.dark-mode .card-header-tabs :deep(.el-tabs) {
-  background: rgba(0, 0, 0, 0.3) !important;
-}
-html.dark-mode .card-header > span:first-child {
-  color: #e0e0e0 !important;
-}
-html.dark-mode .mobile-menu-panel {
-  background: rgba(20, 20, 45, 0.95) !important;
-  border-color: rgba(255, 255, 255, 0.1) !important;
-}
-html.dark-mode .mobile-menu-item {
-  color: #ccc !important;
-}
-html.dark-mode .mobile-menu-item.logout {
-  color: #ff6b6b !important;
-}
-html.dark-mode .mobile-menu-overlay {
-  background: rgba(0, 0, 0, 0.5) !important;
-}
-html.dark-mode .eval-item {
-  border-color: rgba(255, 255, 255, 0.06) !important;
-}
-html.dark-mode .eval-header .eval-teacher {
-  color: #e0e0e0 !important;
-}
-html.dark-mode .eval-comment {
-  color: #bbb !important;
-}
-html.dark-mode .eval-time {
-  color: #777 !important;
-}
-html.dark-mode .refresh-btn {
-  background: rgba(30, 30, 55, 0.8) !important;
-  border-color: rgba(255, 255, 255, 0.1) !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3) !important;
-}
-html.dark-mode .settings-item {
-  border-color: rgba(255, 255, 255, 0.06) !important;
-}
-html.dark-mode .settings-item-left {
-  color: #e0e0e0 !important;
-}
-html.dark-mode .settings-item-left svg {
-  color: #999 !important;
-}
-html.dark-mode :deep(.el-descriptions__label) {
-  background: linear-gradient(135deg, rgba(40, 40, 65, 0.9), rgba(30, 30, 50, 0.9)) !important;
-  color: #aaa !important;
-}
-html.dark-mode :deep(.el-descriptions__content) {
-  color: #e0e0e0 !important;
-  background: rgba(20, 20, 35, 0.4) !important;
-}
-/* 修复移动端搜索框和筛选框的深色模式样式 */
-html.dark-mode .mobile-cs-search-box :deep(.el-input__wrapper) {
-  background: rgba(30, 30, 55, 0.8) !important;
-  border-color: rgba(255, 255, 255, 0.1) !important;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3) !important;
-}
-html.dark-mode .mobile-filter-panel {
-  background: rgba(30, 30, 55, 0.8) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-}
-html.dark-mode .mobile-filter-item :deep(.el-input__wrapper) {
-  background: rgba(40, 40, 65, 0.8) !important;
-  border-color: rgba(255, 255, 255, 0.1) !important;
-}
-html.dark-mode .mobile-filter-item :deep(.el-select__wrapper) {
-  background: rgba(40, 40, 65, 0.8) !important;
-  border-color: rgba(255, 255, 255, 0.1) !important;
-}
-html.dark-mode .mobile-filter-item label {
-  color: #aaa !important;
-}
 @media screen and (max-width: 768px) {
-  html.dark-mode .header {
-    background: rgba(15, 15, 30, 0.9) !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
-  }
-  html.dark-mode :deep(.el-card) {
-    background: rgba(30, 30, 55, 0.8) !important;
-  }
+  .main { padding: 12px; }
+  .course-grid { grid-template-columns: 1fr; }
+  .header-right .n-button:first-child { display: none; }
+  .mobile-menu-btn { display: block; cursor: pointer; padding: 8px; color: #666; }
 }
 </style>

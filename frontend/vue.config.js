@@ -1,7 +1,4 @@
 const { defineConfig } = require('@vue/cli-service')
-const AutoImport = require('unplugin-auto-import/webpack')
-const Components = require('unplugin-vue-components/webpack')
-const { ElementPlusResolver } = require('unplugin-vue-components/resolvers')
 
 module.exports = defineConfig({
   transpileDependencies: true,
@@ -18,14 +15,6 @@ module.exports = defineConfig({
     }
   },
   configureWebpack: {
-    plugins: [
-      AutoImport({
-        resolvers: [ElementPlusResolver()]
-      }),
-      Components({
-        resolvers: [ElementPlusResolver()]
-      })
-    ],
     optimization: {
       splitChunks: {
         cacheGroups: {
@@ -35,15 +24,15 @@ module.exports = defineConfig({
             priority: 10,
             chunks: 'initial'
           },
-          echarts: {
-            name: 'chunk-echarts',
-            test: /[\\/]node_modules[\\/]echarts[\\/]/,
+          naiveui: {
+            name: 'chunk-naiveui',
+            test: /[\\/]node_modules[\\/]naive-ui[\\/]/,
             priority: 20,
             chunks: 'async'
           },
-          elementPlus: {
-            name: 'chunk-element-plus',
-            test: /[\\/]node_modules[\\/]element-plus[\\/]/,
+          echarts: {
+            name: 'chunk-echarts',
+            test: /[\\/]node_modules[\\/]echarts[\\/]/,
             priority: 20,
             chunks: 'async'
           },

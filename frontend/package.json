@@ -8,9 +8,11 @@
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",
+    "@vicons/ionicons5": "^0.13.0",
     "axios": "^1.6.2",
     "echarts": "^6.0.0",
     "element-plus": "^2.4.4",
+    "naive-ui": "^2.44.1",
     "vue": "^3.3.4",
     "vue-echarts": "^8.0.1",
     "vue-router": "^4.2.5"

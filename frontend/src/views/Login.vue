@@ -1,55 +1,59 @@
 <template>
-  <div class="login-container" :style="bgStyle">
-    <div class="login-box">
-      <img src="/images/logo.png" class="login-logo" alt="logo">
-      <h2>选课推荐系统</h2>
-      <el-form :model="form" label-position="left" label-width="60px">
-        <el-form-item label="账号">
-          <el-input v-model="form.username" placeholder="" @keyup.enter="handleLogin" />
-        </el-form-item>
-        <el-form-item label="密码">
-          <el-input v-model="form.password" type="password" placeholder="" show-password @keyup.enter="handleLogin" />
-        </el-form-item>
-      </el-form>
-      <div class="btn-row">
-        <button class="glass-btn glass-btn-primary" :disabled="isLogging" @click="handleLogin">
-          <span v-if="isLogging" class="btn-loading"></span>
+  <div class="login-container">
+    <div class="login-card">
+      <div class="login-header">
+        <img src="/images/logo.png" class="login-logo" alt="logo">
+        <h2>选课推荐系统</h2>
+        <p class="login-subtitle">课程智能推荐与模拟选课平台</p>
+      </div>
+      <n-form :model="form" label-placement="top" :show-label="false">
+        <n-form-item>
+          <n-input v-model:value="form.username" placeholder="请输入账号" size="large" @keyup.enter="handleLogin">
+            <template #prefix>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </template>
+          </n-input>
+        </n-form-item>
+        <n-form-item>
+          <n-input v-model:value="form.password" type="password" placeholder="请输入密码" size="large" show-password-on="click" @keyup.enter="handleLogin">
+            <template #prefix>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </template>
+          </n-input>
+        </n-form-item>
+      </n-form>
+      <div class="login-actions">
+        <n-button type="primary" size="large" block :loading="isLogging" :disabled="isLogging" @click="handleLogin">
           {{ isLogging ? '登录中...' : '登录' }}
-        </button>
-        <button class="glass-btn glass-btn-primary" @click="$router.push('/register')">注册</button>
+        </n-button>
+        <n-button size="large" block class="register-btn" @click="$router.push('/register')">
+          注册
+        </n-button>
       </div>
     </div>
   </div>
 </template>
 
 <script>
+import { defineComponent } from 'vue'
+import { useMessage } from 'naive-ui'
 import request from '../api'
-import { ElMessage } from 'element-plus'
 
-export default {
+export default defineComponent({
+  setup() {
+    const message = useMessage()
+    return { message }
+  },
   data() {
     return {
-      form: {
-        username: '',
-        password: ''
-      },
+      form: { username: '', password: '' },
       isLogging: false
-    }
-  },
-  computed: {
-    bgStyle() {
-      return {
-        backgroundImage: "url('/images/dashboard-bg.jpg')",
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat'
-      }
     }
   },
   methods: {
     async handleLogin() {
       if (!this.form.username || !this.form.password) {
-        ElMessage.warning('请输入账号和密码')
+        this.message.warning('请输入账号和密码')
         return
       }
       if (this.isLogging) return
@@ -60,20 +64,20 @@ export default {
         localStorage.setItem('role', res.role)
         localStorage.setItem('username', res.username)
         localStorage.setItem('user_id', res.user_id)
-        ElMessage.success('登录成功')
+        this.message.success('登录成功')
         if (res.role === 'superadmin' || res.role === 'admin') {
           this.$router.push('/admin')
         } else {
           this.$router.push('/student')
         }
       } catch (e) {
-        ElMessage.error(e.response?.data?.msg || '登录失败')
+        this.message.error(e.response?.data?.msg || '登录失败')
       } finally {
         this.isLogging = false
       }
     }
   }
-}
+})
 </script>
 
 <style scoped>
@@ -82,169 +86,81 @@ export default {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
+  padding: 20px;
 }
 
-.login-box {
-  width: 480px;
-  padding: 50px 45px;
-  background: rgba(255, 255, 255, 0.35);
-  backdrop-filter: blur(20px) saturate(180%);
-  border-radius: 24px;
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.1),
-    inset 0 1px 2px rgba(255, 255, 255, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+.login-card {
+  width: 420px;
+  padding: 48px 40px 40px;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.08);
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 36px;
 }
 
 .login-logo {
-  display: block;
-  width: 80px;
-  height: 80px;
-  margin: 0 auto 16px;
+  width: 72px;
+  height: 72px;
   object-fit: contain;
+  margin-bottom: 12px;
 }
 
-.login-box h2 {
-  text-align: center;
-  margin-bottom: 40px;
-  color: #333;
-  font-size: 22px;
-  font-weight: 600;
-  letter-spacing: 2px;
+.login-header h2 {
+  color: #1a1a2e;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 1px;
 }
 
-:deep(.el-form-item__label) {
-  color: #333;
-  font-size: 15px;
+.login-subtitle {
+  color: #999;
+  font-size: 13px;
+  margin-top: 6px;
 }
 
-:deep(.el-input__wrapper) {
-  background: rgba(255, 255, 255, 0.6) !important;
-  backdrop-filter: blur(8px);
-  box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.06),
-    inset 0 1px 1px rgba(255, 255, 255, 0.5) !important;
-  border: 1px solid rgba(255, 255, 255, 0.3) !important;
-  border-radius: 8px;
-  padding: 4px 12px;
-}
-
-:deep(.el-input__wrapper:hover) {
-  box-shadow:
-    0 1px 6px rgba(0, 0, 0, 0.08),
-    inset 0 1px 1px rgba(255, 255, 255, 0.5) !important;
-}
-
-:deep(.el-input__wrapper.is-focus) {
-  box-shadow:
-    0 0 0 2px rgba(0, 136, 255, 0.3),
-    inset 0 1px 1px rgba(255, 255, 255, 0.5) !important;
-}
-
-.btn-row {
+.login-actions {
+  margin-top: 28px;
   display: flex;
-  justify-content: center;
-  gap: 30px;
-  margin-top: 35px;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.glass-btn {
-  padding: 12px 50px;
-  font-size: 15px;
-  cursor: pointer;
-  border-radius: 20px;
-  border: none;
-  color: #fff;
-  transition: all 0.25s ease;
-  font-weight: 500;
-  letter-spacing: 2px;
+.register-btn {
+  --n-color: transparent !important;
+  --n-border-color: #d9d9d9 !important;
+  --n-color-hover: rgba(0, 0, 0, 0.02) !important;
+  --n-border-color-hover: #2080F0 !important;
+  --n-text-color-hover: #2080F0 !important;
 }
 
-.glass-btn-primary {
-  background: rgba(0, 136, 255, 0.8);
-  backdrop-filter: blur(16px) saturate(150%);
-  box-shadow:
-    0 2px 8px rgba(0, 136, 255, 0.2),
-    inset 0 1px 2px rgba(255, 255, 255, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+html.dark-mode .login-card {
+  background: rgba(30, 30, 50, 0.85);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
-.glass-btn-primary:hover {
-  background: rgba(0, 136, 255, 0.95);
-  transform: translateY(-1px);
-  box-shadow:
-    0 4px 16px rgba(0, 136, 255, 0.35),
-    inset 0 1px 2px rgba(255, 255, 255, 0.3);
+html.dark-mode .login-header h2 {
+  color: #e8e8e8;
 }
 
-.glass-btn-primary:active {
-  transform: translateY(0);
+html.dark-mode .login-subtitle {
+  color: #888;
 }
 
-.glass-btn-primary:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-  transform: none !important;
-}
-
-.btn-loading {
-  display: inline-block;
-  width: 14px;
-  height: 14px;
-  border: 2px solid rgba(255,255,255,0.3);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: btn-spin 0.6s linear infinite;
-  margin-right: 6px;
-  vertical-align: middle;
-}
-
-@keyframes btn-spin {
-  to { transform: rotate(360deg); }
-}
-
-/* 手机端适配 (1080P竖屏) */
 @media screen and (max-width: 768px) {
-  .login-container {
-    padding: 20px;
-  }
-  
-  .login-box {
+  .login-card {
     width: 100%;
     max-width: 400px;
-    padding: 30px 25px;
-    border-radius: 20px;
+    padding: 32px 24px;
   }
-  
-  .login-box h2 {
+  .login-header h2 {
     font-size: 20px;
-    margin-bottom: 30px;
-  }
-  
-  :deep(.el-form-item__label) {
-    font-size: 14px;
-    width: 60px !important;
-  }
-  
-  :deep(.el-input__wrapper) {
-    height: 40px !important;
-  }
-  
-  :deep(.el-input__inner) {
-    font-size: 14px;
-  }
-  
-  .btn-row {
-    flex-direction: column;
-    gap: 15px;
-    margin-top: 25px;
-  }
-  
-  .glass-btn {
-    padding: 12px 30px;
-    font-size: 14px;
-    width: 100%;
-    text-align: center;
   }
 }
 </style>
