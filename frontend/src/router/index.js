@@ -2,16 +2,64 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 const routes = [
   { path: '/', redirect: '/login' },
-  { path: '/login', component: () => import('../views/Login.vue') },
-  { path: '/register', component: () => import('../views/Register.vue') },
-  { path: '/admin', component: () => import('../views/AdminDashboard.vue'), meta: { requiresAuth: true, role: 'admin' } },
-  { path: '/student', component: () => import('../views/StudentDashboard.vue'), meta: { requiresAuth: true, role: 'student' } },
-  { path: '/superadmin', component: () => import('../views/AdminDashboard.vue'), meta: { requiresAuth: true, role: 'superadmin' } },
-  { path: '/user-management', component: () => import('../views/UserManagement.vue'), meta: { requiresAuth: true, role: 'superadmin' } },
-  { path: '/feedback', component: () => import('../views/Feedback.vue'), meta: { requiresAuth: true } },
-  { path: '/user-center', component: () => import('../views/UserCenter.vue'), meta: { requiresAuth: true } },
-  { path: '/simulated-selection', component: () => import('../views/SimulatedSelection.vue'), meta: { requiresAuth: true } },
-  { path: '/data-analysis', component: () => import('../views/DataAnalysis.vue'), meta: { requiresAuth: true } }
+  {
+    path: '/login',
+    name: 'Login',
+    component: () => import(/* webpackChunkName: "login" */ '../views/Login.vue')
+  },
+  {
+    path: '/register',
+    name: 'Register',
+    component: () => import(/* webpackChunkName: "register" */ '../views/Register.vue')
+  },
+  {
+    path: '/admin',
+    name: 'Admin',
+    component: () => import(/* webpackChunkName: "admin" */ '../views/AdminDashboard.vue'),
+    meta: { requiresAuth: true, role: 'admin' }
+  },
+  {
+    path: '/student',
+    name: 'Student',
+    component: () => import(/* webpackChunkName: "student" */ '../views/StudentDashboard.vue'),
+    meta: { requiresAuth: true, role: 'student' }
+  },
+  {
+    path: '/superadmin',
+    name: 'SuperAdmin',
+    component: () => import(/* webpackChunkName: "admin" */ '../views/AdminDashboard.vue'),
+    meta: { requiresAuth: true, role: 'superadmin' }
+  },
+  {
+    path: '/user-management',
+    name: 'UserManagement',
+    component: () => import(/* webpackChunkName: "user-management" */ '../views/UserManagement.vue'),
+    meta: { requiresAuth: true, role: 'superadmin' }
+  },
+  {
+    path: '/feedback',
+    name: 'Feedback',
+    component: () => import(/* webpackChunkName: "feedback" */ '../views/Feedback.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/user-center',
+    name: 'UserCenter',
+    component: () => import(/* webpackChunkName: "user-center" */ '../views/UserCenter.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/simulated-selection',
+    name: 'SimulatedSelection',
+    component: () => import(/* webpackChunkName: "simulated-selection" */ '../views/SimulatedSelection.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/data-analysis',
+    name: 'DataAnalysis',
+    component: () => import(/* webpackChunkName: "data-analysis" */ '../views/DataAnalysis.vue'),
+    meta: { requiresAuth: true }
+  }
 ]
 
 const router = createRouter({
@@ -26,7 +74,6 @@ router.beforeEach((to, from, next) => {
   if (to.meta.requiresAuth && !token) {
     next('/login')
   } else if (to.meta.role) {
-    // 超管可以访问所有需要 admin 权限的页面
     if (to.meta.role === 'admin' && (role === 'admin' || role === 'superadmin')) {
       next()
     } else if (to.meta.role === 'student' && (role === 'student' || role === 'admin' || role === 'superadmin')) {

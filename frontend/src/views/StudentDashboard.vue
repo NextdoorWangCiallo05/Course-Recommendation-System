@@ -110,15 +110,8 @@
           </div>
           <div v-if="isLoading" class="loading-skeleton">
             <el-row :gutter="20">
-              <el-col v-for="n in 6" :key="n" :xs="24" :sm="12" :md="8" :lg="6">
-                <el-card class="course-card skeleton-card" shadow="hover">
-                  <div class="skeleton-block skeleton-title"></div>
-                  <div class="skeleton-block skeleton-tag"></div>
-                  <div class="skeleton-block skeleton-line"></div>
-                  <div class="skeleton-block skeleton-line short"></div>
-                  <div class="skeleton-block skeleton-line"></div>
-                  <div class="skeleton-block skeleton-btn"></div>
-                </el-card>
+              <el-col v-for="n in 8" :key="n" :xs="24" :sm="12" :md="8" :lg="6">
+                <skeleton-card :lines="5" />
               </el-col>
             </el-row>
           </div>
@@ -379,8 +372,10 @@
 import request, { clearCache } from '../api'
 import { COURSE_TYPE_OPTIONS } from '../constants'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import SkeletonCard from '../components/SkeletonCard.vue'
 
 export default {
+  components: { SkeletonCard },
   data() {
     return {
       username: '',
@@ -982,47 +977,7 @@ export default {
 }
 
 /* 骨架屏加载动画 */
-.skeleton-card {
-  pointer-events: none;
-}
 
-.skeleton-block {
-  background: linear-gradient(90deg, rgba(200, 200, 200, 0.2) 25%, rgba(200, 200, 200, 0.4) 50%, rgba(200, 200, 200, 0.2) 75%);
-  background-size: 200% 100%;
-  animation: skeleton-shimmer 1.5s ease infinite;
-  border-radius: 6px;
-  margin-bottom: 12px;
-}
-
-.skeleton-title {
-  height: 20px;
-  width: 60%;
-}
-
-.skeleton-tag {
-  height: 24px;
-  width: 40%;
-}
-
-.skeleton-line {
-  height: 14px;
-  width: 90%;
-}
-
-.skeleton-line.short {
-  width: 50%;
-}
-
-.skeleton-btn {
-  height: 32px;
-  width: 80%;
-  margin: 15px auto 0;
-}
-
-@keyframes skeleton-shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
 
 .course-card:nth-child(2) { animation-delay: 0.05s; }
 .course-card:nth-child(3) { animation-delay: 0.1s; }
@@ -1880,9 +1835,7 @@ html.dark-mode .course-desc {
 html.dark-mode .course-desc strong {
   color: #ccc !important;
 }
-html.dark-mode .skeleton-block {
-  background: linear-gradient(90deg, rgba(60, 60, 90, 0.3) 25%, rgba(80, 80, 110, 0.5) 50%, rgba(60, 60, 90, 0.3) 75%) !important;
-}
+
 html.dark-mode .teacher-card {
   background: rgba(30, 30, 55, 0.75) !important;
   border-color: rgba(255, 255, 255, 0.08) !important;

@@ -16,6 +16,8 @@
     "vue-router": "^4.2.5"
   },
   "devDependencies": {
-    "@vue/cli-service": "^5.0.8"
+    "@vue/cli-service": "^5.0.8",
+    "unplugin-auto-import": "^21.0.0",
+    "unplugin-vue-components": "^32.0.0"
   }
 }

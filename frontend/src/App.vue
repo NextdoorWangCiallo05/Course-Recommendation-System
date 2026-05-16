@@ -1,10 +1,12 @@
 <template>
   <div id="app">
-    <router-view v-slot="{ Component }">
-      <transition name="fade" mode="out-in">
-        <component :is="Component" />
-      </transition>
-    </router-view>
+    <error-boundary>
+      <router-view v-slot="{ Component }">
+        <transition name="fade" mode="out-in">
+          <component :is="Component" />
+        </transition>
+      </router-view>
+    </error-boundary>
     <div class="icp-footer">
       <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">
         鲁ICP备2026021969号
@@ -14,8 +16,11 @@
 </template>
 
 <script>
+import ErrorBoundary from './components/ErrorBoundary.vue'
+
 export default {
   name: 'App',
+  components: { ErrorBoundary },
   mounted() {
     const isDark = localStorage.getItem('darkMode') === 'true'
     if (isDark) {
@@ -48,7 +53,6 @@ body {
   min-height: 100vh;
 }
 
-/* 手机端适配 */
 @media screen and (max-width: 768px) {
   * {
     box-sizing: border-box;
@@ -64,7 +68,6 @@ body {
     min-height: 100vh;
   }
 
-  /* 搜索表单适配 */
   .search-form {
     padding: 15px !important;
     margin: 10px !important;
@@ -81,7 +84,6 @@ body {
     margin-bottom: 5px !important;
   }
 
-  /* 课程卡片适配 */
   .course-card {
     margin: 0 !important;
   }
@@ -90,7 +92,6 @@ body {
     padding: 10px !important;
   }
 
-  /* 表格适配 */
   .el-table {
     font-size: 12px !important;
   }
@@ -103,14 +104,12 @@ body {
     padding: 8px 5px !important;
   }
 
-  /* 按钮适配 */
   .el-button {
     padding: 15px 20px !important;
     font-size: 12px !important;
     border-radius: 20px !important;
   }
 
-  /* 对话框适配 */
   .el-dialog {
     width: 95% !important;
     margin: 10px auto !important;
@@ -124,7 +123,6 @@ body {
     padding: 15px !important;
   }
 
-  /* 表单项适配 */
   .el-form-item {
     margin-bottom: 15px !important;
   }
@@ -133,18 +131,15 @@ body {
     font-size: 13px !important;
   }
 
-  /* 标签适配 */
   .el-tag {
     font-size: 11px !important;
     padding: 0 6px !important;
   }
 
-  /* 评分适配 */
   .rating-info {
     font-size: 12px !important;
   }
 
-  /* 折叠菜单适配 */
   .el-collapse-item__header {
     font-size: 13px !important;
     padding: 10px !important;
@@ -156,7 +151,6 @@ body {
   }
 }
 
-/* 超小屏幕适配 */
 @media screen and (max-width: 480px) {
   .el-card {
     border-radius: 4px !important;
@@ -168,28 +162,24 @@ body {
   }
 }
 
-/* 全局按钮圆角样式 - 大按钮用于表单提交等主要操作 */
 .el-button--large {
   border-radius: 20px !important;
   font-size: 15px !important;
   padding: 18px 20px !important;
 }
 
-/* 默认按钮适中 */
 .el-button:not(.el-button--small):not(.el-button--large) {
   border-radius: 18px !important;
   font-size: 14px !important;
   padding: 10px 18px !important;
 }
 
-/* 表格内小按钮样式优化 */
 .el-table .el-button--small {
   padding: 6px 12px !important;
   font-size: 12px !important;
   border-radius: 12px !important;
 }
 
-/* 全局小按钮样式 - 适用于课程卡片等 */
 .el-button--small {
   padding: 10px 18px !important;
   font-size: 14px !important;
@@ -200,7 +190,6 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.25) !important;
 }
 
-/* 页面切换过渡动画 */
 .fade-enter-active,
 .fade-leave-active {
   transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
@@ -211,7 +200,6 @@ body {
   transform: translateY(20px);
 }
 
-/* 卡片渐入动画 */
 @keyframes cardFadeIn {
   from {
     opacity: 0;
@@ -223,7 +211,6 @@ body {
   }
 }
 
-/* 全局输入框和选择框液态玻璃效果 */
 .el-input__wrapper {
   background: rgba(255, 255, 255, 0.8) !important;
   box-shadow:
@@ -250,7 +237,6 @@ body {
   border-color: #0088ff !important;
 }
 
-/* 选择框触发器液态玻璃效果 */
 .el-select .el-input__wrapper,
 .el-select .el-select__wrapper {
   background: rgba(255, 255, 255, 0.8) !important;
@@ -270,7 +256,6 @@ body {
   border-color: rgba(0, 136, 255, 0.3) !important;
 }
 
-/* 全局对话框按钮液态玻璃效果 */
 .el-message-box .el-button,
 .el-dialog .el-dialog__footer .el-button {
   box-shadow:
@@ -305,7 +290,6 @@ body {
   border-radius: 20px !important;
 }
 
-/* 全局下拉菜单液态玻璃效果 */
 .el-select-dropdown {
   background: rgba(255, 255, 255, 0.95) !important;
   border: 1px solid rgba(255, 255, 255, 0.2) !important;
@@ -343,12 +327,10 @@ body {
   box-shadow: none !important;
 }
 
-/* 全局弹出框（popper）毛玻璃效果 */
 .el-popper.is-light .el-select-dropdown {
   margin-top: 4px !important;
 }
 
-/* 全局对话框毛玻璃美化 */
 .el-dialog {
   border-radius: 20px !important;
   overflow: hidden;
@@ -391,7 +373,6 @@ body {
   transform: rotate(90deg);
 }
 
-/* 全局标签毛玻璃美化 */
 .el-tag {
   border-radius: 8px !important;
   border: none !important;
@@ -422,7 +403,6 @@ body {
   color: #faad14 !important;
 }
 
-/* 全局描述列表毛玻璃美化 */
 .el-descriptions {
   border-radius: 12px !important;
   overflow: hidden;
@@ -439,18 +419,15 @@ body {
   color: #333 !important;
 }
 
-/* 全局空状态美化 */
 .el-empty__description p {
   color: #999 !important;
 }
 
-/* 全局表单毛玻璃美化 */
 .el-form-item__label {
   color: #555 !important;
   font-weight: 500 !important;
 }
 
-/* 全局卡片毛玻璃美化 - 用于对话框等场景 */
 .el-card {
   border-radius: 16px !important;
   border: 1px solid rgba(255, 255, 255, 0.4) !important;
@@ -461,7 +438,6 @@ body {
     inset 0 1px 2px rgba(255, 255, 255, 0.4) !important;
 }
 
-/* ========== 深色模式 ========== */
 html.dark-mode {
   background: #0f0f1a;
 }
@@ -606,14 +582,12 @@ html.dark-mode .el-select-dropdown__item.is-selected {
   color: #fff !important;
 }
 
-/* 修复搜索栏在深色模式下的样式 */
 html.dark-mode .search-form {
   background: rgba(20, 20, 40, 0.7) !important;
   border: 1px solid rgba(255, 255, 255, 0.06) !important;
   border-radius: 16px;
 }
 
-/* 修复深色模式下的按钮样式 */
 html.dark-mode .el-button--default {
   background: rgba(40, 40, 65, 0.8) !important;
   border-color: rgba(255, 255, 255, 0.1) !important;
@@ -625,7 +599,6 @@ html.dark-mode .el-button--default:hover {
   border-color: rgba(0, 136, 255, 0.3) !important;
 }
 
-/* 修复深色模式下的标签样式 */
 html.dark-mode .el-form-item__label {
   color: #aaa !important;
 }
@@ -755,7 +728,6 @@ html.dark-mode .icp-footer a {
   color: rgba(255, 255, 255, 0.2) !important;
 }
 
-/* 深色模式渐变过渡动画 */
 html.dark-mode,
 html.dark-mode *,
 html.dark-mode *::before,
@@ -763,7 +735,6 @@ html.dark-mode *::after {
   transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease !important;
 }
 
-/* ICP 备案号页面底部 */
 .icp-footer {
   text-align: center;
   padding: 16px 0 12px;

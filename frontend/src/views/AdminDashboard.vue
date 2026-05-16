@@ -410,15 +410,8 @@
           </div>
           <div v-if="adminLoading" class="loading-skeleton">
             <el-row :gutter="20">
-              <el-col v-for="n in 6" :key="n" :xs="24" :sm="12" :md="8" :lg="6">
-                <el-card class="course-card skeleton-card" shadow="hover">
-                  <div class="skeleton-block skeleton-title"></div>
-                  <div class="skeleton-block skeleton-tag"></div>
-                  <div class="skeleton-block skeleton-line"></div>
-                  <div class="skeleton-block skeleton-line short"></div>
-                  <div class="skeleton-block skeleton-line"></div>
-                  <div class="skeleton-block skeleton-btn"></div>
-                </el-card>
+              <el-col v-for="n in 8" :key="n" :xs="24" :sm="12" :md="8" :lg="6">
+                <skeleton-card :lines="5" />
               </el-col>
             </el-row>
           </div>
@@ -908,8 +901,10 @@
 import request, { clearCache } from '../api'
 import { COURSE_TYPE_OPTIONS } from '../constants'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import SkeletonCard from '../components/SkeletonCard.vue'
 
 export default {
+  components: { SkeletonCard },
   data() {
     return {
       username: '',
@@ -2778,11 +2773,6 @@ export default {
     width: calc(50% - 7.5px);
   }
 
-  .loading-skeleton .skeleton-card {
-    padding: 15px;
-    border-radius: 16px;
-  }
-
   .mobile-menu-overlay {
     display: block;
     position: fixed;
@@ -3100,9 +3090,6 @@ html.dark-mode .course-desc {
 }
 html.dark-mode .course-desc strong {
   color: #ccc !important;
-}
-html.dark-mode .skeleton-block {
-  background: linear-gradient(90deg, rgba(60, 60, 90, 0.3) 25%, rgba(80, 80, 110, 0.5) 50%, rgba(60, 60, 90, 0.3) 75%) !important;
 }
 html.dark-mode .teacher-card {
   background: rgba(30, 30, 55, 0.75) !important;
