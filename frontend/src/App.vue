@@ -23,7 +23,7 @@
 
 <script>
 import { computed } from 'vue'
-import { zhCN, dateZhCN } from 'naive-ui'
+import { zhCN, dateZhCN, darkTheme } from 'naive-ui'
 import { themeOverrides, darkThemeOverrides } from './theme'
 
 export default {
@@ -45,7 +45,7 @@ export default {
     return {
       zhCN,
       dateZhCN,
-      naiveTheme: computed(() => isDark.value ? darkThemeOverrides : null),
+      naiveTheme: computed(() => isDark.value ? darkTheme : null),
       themeOverrides: computed(() => isDark.value ? darkThemeOverrides : themeOverrides)
     }
   },
