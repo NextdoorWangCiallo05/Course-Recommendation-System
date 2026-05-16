@@ -1,1 +1,70 @@
+/* 全局样式重置和基础配置 */
+:root {
+  --primary-color: #2080F0;
+  --primary-hover: #4098FC;
+  --success-color: #27AE60;
+  --warning-color: #F39C12;
+  --error-color: #E74C3C;
+  --info-color: #3498DB;
+  --text-primary: #333;
+  --text-secondary: #666;
+  --text-placeholder: #999;
+  --bg-color: #f5f7fa;
+  --card-bg: #fff;
+  --border-color: #e8eaed;
+}
+
+html.dark-mode {
+  --text-primary: #e8e8e8;
+  --text-secondary: #aaa;
+  --text-placeholder: #666;
+  --bg-color: #141414;
+  --card-bg: #1e1e1e;
+  --border-color: #333;
+}
+
+/* 通用输入框样式 */
+.n-input,
+.n-select {
+  background-color: var(--card-bg) !important;
+  color: var(--text-primary) !important;
+}
+
+.n-input::placeholder,
+.n-select-placeholder {
+  color: var(--text-placeholder) !important;
+}
+
+/* 卡片背景 */
+.n-card {
+  background-color: var(--card-bg) !important;
+}
+
+/* 全局滚动条样式 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+html.dark-mode ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+html.dark-mode ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
 /* Naive UI pagination 使用内置样式，无需额外覆盖 */
